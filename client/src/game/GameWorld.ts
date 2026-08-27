@@ -11,6 +11,7 @@ import { Hud, type MissionState } from "./Hud";
 import { Rover } from "./Rover";
 import { DustStorm } from "./DustStorm";
 import type { MissionMap } from "./MissionMap";
+import { recordMission, type CompletionReport } from "./Progression";
 import { deepCraterAt, terrainHeight } from "./terrain";
 
 type Sample = { root: TransformNode; position: Vector3; collected: boolean; bobOffset: number };
@@ -29,6 +30,7 @@ export class GameWorld {
   private readonly isDemo: boolean;
   private followTarget: Vector3;
   private boostFlash = false;
+  private completion: CompletionReport | null = null;
 
   constructor(private readonly scene: Scene, private readonly input: InputManager, private readonly hud: Hud, private readonly map: MissionMap) {
     this.isDemo = new URLSearchParams(window.location.search).has("demo");
@@ -71,6 +73,7 @@ export class GameWorld {
     this.energy = 100;
     this.elapsed = 0;
     this.collected = 0;
+    this.completion = null;
     this.state = "active";
     this.rover.reset();
     this.samples.forEach((sample) => {
@@ -135,6 +138,7 @@ export class GameWorld {
       this.collected += 1;
       if (this.collected >= this.samples.length) {
         this.state = "success";
+        this.completion = recordMission(this.map.id, this.elapsed, this.energy);
       } else {
         this.energy = Math.min(100, this.energy + 8);
         this.updateObjectiveMarker();
@@ -158,6 +162,8 @@ export class GameWorld {
       mapIndex: this.map.index,
       stormLabel: this.map.storm.active ? `Polvo · ${this.map.storm.strength}` : "Visibilidad · plena",
       hazard,
+      grade: this.completion?.grade,
+      completionNote: this.getCompletionNote(),
     });
     this.boostFlash = false;
   }
@@ -218,6 +224,14 @@ export class GameWorld {
       halo.material = sampleMaterial;
       this.samples.push({ root, position: position.clone(), collected: false, bobOffset: index * 0.73 });
     });
+  }
+
+  private getCompletionNote() {
+    if (!this.completion) return undefined;
+    const labels = { tycho: "Fosa de Tycho", selenite: "Cuenca de Selenita", tranquility: "Mare Tranquillitatis" };
+    if (this.completion.newUnlock) return `Nuevo sector desbloqueado: ${labels[this.completion.newUnlock]}.`;
+    if (this.completion.grade === "C") return "El grado C registra la misión; para desbloquear el próximo sector consigue grado B.";
+    return this.completion.isNewBest ? "Nuevo mejor desempeño registrado en la bitácora." : "El mejor desempeño previo se conserva en la bitácora.";
   }
 
   private createDecorations() {

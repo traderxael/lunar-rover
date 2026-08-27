@@ -1,10 +1,11 @@
 import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { getProgress, isMapUnlocked, type MapId } from "./Progression";
 
 export type Crater = { x: number; z: number; radius: number; depth: number; deep?: boolean };
 export type StormConfig = { active: boolean; strength: "calma" | "moderada" | "severa"; particles: number; windSpeed: number; energyDrain: number };
 
 export type MissionMap = {
-  id: "tranquility" | "tycho" | "selenite";
+  id: MapId;
   index: string;
   name: string;
   subtitle: string;
@@ -49,5 +50,6 @@ export const MISSION_MAPS: MissionMap[] = [
 
 export function getMissionMap() {
   const selected = new URLSearchParams(window.location.search).get("map");
-  return MISSION_MAPS.find((map) => map.id === selected) ?? MISSION_MAPS[0];
+  const candidate = MISSION_MAPS.find((map) => map.id === selected) ?? MISSION_MAPS[0];
+  return isMapUnlocked(candidate.id, getProgress()) ? candidate : MISSION_MAPS[0];
 }

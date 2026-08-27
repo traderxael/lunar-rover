@@ -37,3 +37,13 @@ Se creará un juego 3D de navegador de pantalla completa donde el jugador conduc
 | **Cuenca de Selenita** | Paisaje oscuro, compacto y con una tormenta de polvo transversal que avanza en oleadas. | La tormenta reduce parcialmente la visibilidad, atenúa la telemetría y aumenta el consumo en los tramos expuestos. | Las partículas cruzan el campo de juego de forma continua, no bloquean los controles y el estado de tormenta se lee en HUD. |
 
 La selección de mapa estará disponible antes de iniciar la misión. Cada mapa redefine el punto de partida, las muestras, las rocas, las cavidades y el tono de iluminación; no será un mero cambio cosmético.
+
+## Progresión de sectores
+
+| Sector | Estado inicial | Condición de acceso | Evaluación de desempeño |
+|---|---|---|---|
+| **Mare Tranquillitatis** | Disponible. | Ninguna. | La misión registra tiempo, energía restante y grado. |
+| **Fosa de Tycho** | Bloqueado. | Obtener **grado B o superior** en Mare Tranquillitatis. | B exige completar las cinco muestras con al menos 30 % de energía y dentro de 2:30 min; A y S exigen mayor reserva y menor tiempo. |
+| **Cuenca de Selenita** | Bloqueado. | Obtener **grado B o superior** en Fosa de Tycho. | La misma escala premia ruta eficiente y energía, con el riesgo adicional de los cráteres. |
+
+El progreso se guarda en el navegador. Al completar una misión se conservará el mejor grado, la mayor energía de llegada y el mejor tiempo, de modo que una recarga no elimina los sectores ya desbloqueados. La interfaz debe describir con precisión qué falta para habilitar cada sector y anunciar inmediatamente un nuevo desbloqueo.

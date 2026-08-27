@@ -14,6 +14,8 @@ export type HudSnapshot = {
   mapIndex: string;
   stormLabel: string;
   hazard: boolean;
+  grade?: string;
+  completionNote?: string;
 };
 
 export class Hud {
@@ -71,7 +73,9 @@ export class Hud {
     if (snapshot.state === "success") {
       result?.classList.add("is-visible");
       if (resultTitle) resultTitle.textContent = "Muestras aseguradas";
-      if (resultCopy) resultCopy.textContent = `Completaste ${snapshot.mapName} en ${this.clock(snapshot.elapsed)}. La bitácora queda lista para transmisión.`;
+      if (resultCopy) resultCopy.textContent = `Grado ${snapshot.grade ?? "C"} · ${snapshot.mapName} en ${this.clock(snapshot.elapsed)} con ${Math.ceil(snapshot.energy)}% de energía. ${snapshot.completionNote ?? "La bitácora queda lista para transmisión."}`;
+      const unlock = document.getElementById("result-unlock");
+      if (unlock) unlock.textContent = snapshot.completionNote ?? "El desempeño se guardó en esta bitácora local.";
     } else if (snapshot.state === "depleted") {
       result?.classList.add("is-visible");
       if (resultTitle) resultTitle.textContent = "Energía agotada";

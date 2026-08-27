@@ -7,13 +7,16 @@ import { Engine } from "@babylonjs/core/Engines/engine";
 import { createGameScene, type GameHandle } from "@/game/scene";
 import { ASSET_URLS } from "@/game/assets";
 import { getMissionMap, MISSION_MAPS } from "@/game/MissionMap";
+import { getProgress, isMapUnlocked, requirementLabel } from "@/game/Progression";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedRef = useRef(false);
   const activeMap = getMissionMap();
+  const progress = getProgress();
 
   const chooseMap = (mapId: string) => {
+    if (!isMapUnlocked(mapId as "tranquility" | "tycho" | "selenite", progress)) return;
     const query = new URLSearchParams(window.location.search);
     query.set("map", mapId);
     query.delete("demo");
@@ -100,11 +103,12 @@ export default function GameCanvas() {
               <p>Selecciona una zona de aterrizaje</p>
               <div className="map-options">
                 {MISSION_MAPS.map((map) => (
-                  <button key={map.id} type="button" onClick={() => chooseMap(map.id)} className={`map-option ${map.id === activeMap.id ? "is-active" : ""}`}>
-                    <span>{map.index}</span><strong>{map.name}</strong><small>{map.subtitle}</small>
+                  <button key={map.id} type="button" disabled={!isMapUnlocked(map.id, progress)} onClick={() => chooseMap(map.id)} className={`map-option ${map.id === activeMap.id ? "is-active" : ""} ${!isMapUnlocked(map.id, progress) ? "is-locked" : ""}`}>
+                    <span>{map.index}</span><strong>{map.name}</strong><small>{isMapUnlocked(map.id, progress) ? (progress.records[map.id].grade ? `Mejor grado ${progress.records[map.id].grade} · ${map.subtitle}` : map.subtitle) : `⌁ ${requirementLabel(map.id, progress)}`}</small>
                   </button>
                 ))}
               </div>
+              <p className="progress-key"><b>Certificación B</b> · 5 muestras · ≥30% de energía · ≤ 2:30</p>
             </div>
             <button id="mission-start" className="primary-action">Iniciar exploración <span>↗</span></button>
           </div>
@@ -114,6 +118,7 @@ export default function GameCanvas() {
           <p className="eyebrow">Informe de superficie</p>
           <h2 id="result-title">Muestras aseguradas</h2>
           <p id="result-copy" />
+          <p id="result-unlock" className="result-unlock" />
           <button id="mission-restart" className="primary-action">Reiniciar misión <span>↻</span></button>
         </section>
 
