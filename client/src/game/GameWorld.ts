@@ -9,23 +9,19 @@ import type { Scene } from "@babylonjs/core/scene";
 import { InputManager, type GameActions } from "./InputManager";
 import { Hud, type MissionState } from "./Hud";
 import { Rover } from "./Rover";
-import { terrainHeight } from "./terrain";
+import { DustStorm } from "./DustStorm";
+import type { MissionMap } from "./MissionMap";
+import { deepCraterAt, terrainHeight } from "./terrain";
 
 type Sample = { root: TransformNode; position: Vector3; collected: boolean; bobOffset: number };
-
-const SAMPLE_POSITIONS = [
-  new Vector3(-27, 0, 20),
-  new Vector3(-6, 0, 4),
-  new Vector3(17, 0, -10),
-  new Vector3(33, 0, 22),
-  new Vector3(45, 0, -27),
-];
 
 export class GameWorld {
   private readonly rover: Rover;
   private readonly samples: Sample[] = [];
   private readonly targetRing: Mesh;
   private readonly targetLight: PointLight;
+  private readonly dustStorm: DustStorm;
+  private readonly hazardRings: Mesh[] = [];
   private energy = 100;
   private elapsed = 0;
   private collected = 0;
@@ -34,13 +30,15 @@ export class GameWorld {
   private followTarget: Vector3;
   private boostFlash = false;
 
-  constructor(private readonly scene: Scene, private readonly input: InputManager, private readonly hud: Hud) {
+  constructor(private readonly scene: Scene, private readonly input: InputManager, private readonly hud: Hud, private readonly map: MissionMap) {
     this.isDemo = new URLSearchParams(window.location.search).has("demo");
     this.state = this.isDemo ? "active" : "briefing";
-    this.rover = new Rover(scene, terrainHeight);
+    this.rover = new Rover(scene, (x, z) => terrainHeight(this.map, x, z), map.start);
     this.followTarget = this.rover.position.clone();
     this.createSamples();
     this.createDecorations();
+    this.createCraterHazards();
+    this.dustStorm = new DustStorm(scene, map.storm);
 
     this.targetRing = MeshBuilder.CreateTorus("objective-ring", { diameter: 4.8, thickness: 0.075, tessellation: 40 }, scene);
     this.targetRing.rotation.x = Math.PI / 2;
@@ -91,29 +89,38 @@ export class GameWorld {
     const isActive = this.state === "active";
     const step = this.rover.update(delta, actions, isActive, this.energy);
     this.boostFlash = step.boosted;
+    const crater = deepCraterAt(this.map, this.rover.position.x, this.rover.position.z);
+    const craterHazard = Boolean(crater && isActive);
+    if (crater && isActive) this.rover.repelFromCrater(crater.x, crater.z, crater.radius * 0.77);
     if (isActive) {
       this.elapsed += delta;
-      this.energy = Math.max(0, this.energy - step.usedEnergy - (step.distance > 0.01 ? delta * 0.12 : 0));
+      const motionDrain = step.distance > 0.01 ? delta * (0.12 + this.map.storm.energyDrain) : 0;
+      const craterDrain = craterHazard ? 3.1 * delta : 0;
+      this.energy = Math.max(0, this.energy - step.usedEnergy - motionDrain - craterDrain);
       this.checkSamples();
       if (this.energy <= 0) this.state = "depleted";
     }
 
+    this.dustStorm.update(delta, this.elapsed);
+
     this.samples.forEach((sample) => {
       if (!sample.collected) {
         sample.root.rotation.y += delta * 0.85;
-        sample.root.position.y = terrainHeight(sample.position.x, sample.position.z) + 0.7 + Math.sin(this.elapsed * 2.1 + sample.bobOffset) * 0.12;
+        sample.root.position.y = terrainHeight(this.map, sample.position.x, sample.position.z) + 0.7 + Math.sin(this.elapsed * 2.1 + sample.bobOffset) * 0.12;
       }
     });
 
     const target = this.rover.position.clone();
-    this.followTarget = Vector3.Lerp(this.followTarget, target, Math.min(delta * 2.1, 1));
+    this.followTarget = Vector3.Lerp(this.followTarget, target, Math.min(delta * 7.5, 1));
     this.targetRing.rotation.z += delta * 0.32;
-    this.refreshHud();
+    this.refreshHud(craterHazard);
   }
 
   dispose() {
     this.rover.dispose();
     this.samples.forEach((sample) => sample.root.dispose());
+    this.hazardRings.forEach((ring) => ring.dispose());
+    this.dustStorm.dispose();
     this.targetRing.dispose();
     this.targetLight.dispose();
   }
@@ -135,7 +142,7 @@ export class GameWorld {
     }
   }
 
-  private refreshHud() {
+  private refreshHud(hazard = false) {
     const target = this.samples[this.collected];
     const targetDistance = target && !target.collected ? Vector3.Distance(this.rover.position, target.root.position) : 0;
     this.hud.update({
@@ -147,6 +154,10 @@ export class GameWorld {
       speed: this.rover.currentSpeed,
       state: this.state,
       boosted: this.boostFlash,
+      mapName: this.map.name,
+      mapIndex: this.map.index,
+      stormLabel: this.map.storm.active ? `Polvo · ${this.map.storm.strength}` : "Visibilidad · plena",
+      hazard,
     });
     this.boostFlash = false;
   }
@@ -176,7 +187,7 @@ export class GameWorld {
     this.targetRing.setEnabled(true);
     this.targetLight.setEnabled(true);
     this.targetRing.position = target.position.clone();
-    this.targetRing.position.y = terrainHeight(target.position.x, target.position.z) + 0.08;
+    this.targetRing.position.y = terrainHeight(this.map, target.position.x, target.position.z) + 0.08;
     this.targetLight.position = this.targetRing.position.add(new Vector3(0, 2.8, 0));
   }
 
@@ -187,8 +198,8 @@ export class GameWorld {
     const capMaterial = new StandardMaterial("sample-cap-material", this.scene);
     capMaterial.diffuseColor = Color3.FromHexString("#E8E3D4");
 
-    SAMPLE_POSITIONS.forEach((position, index) => {
-      position.y = terrainHeight(position.x, position.z);
+    this.map.samples.forEach((position, index) => {
+      position.y = terrainHeight(this.map, position.x, position.z);
       const root = new TransformNode(`sample-${index}`, this.scene);
       root.position = position.clone();
       root.position.y += 0.7;
@@ -213,13 +224,10 @@ export class GameWorld {
     const rockMaterial = new StandardMaterial("moon-rock", this.scene);
     rockMaterial.diffuseColor = Color3.FromHexString("#5E6268");
     rockMaterial.specularColor = Color3.FromHexString("#111317");
-    const rocks = [
-      [-39, 11, 1.9], [-34, 28, 1.2], [-17, -17, 2.5], [-4, 31, 1.45], [8, 19, 2.1], [14, -26, 1.7], [28, 6, 2.4], [45, 30, 1.5], [49, -7, 2.1], [4, -44, 2.7], [-43, -34, 2.2],
-    ];
-    rocks.forEach(([x, z, size], index) => {
+    this.map.rocks.forEach(([x, z, size], index) => {
       const rock = MeshBuilder.CreateIcoSphere(`moon-rock-${index}`, { radius: size, subdivisions: 1 }, this.scene);
       rock.scaling.y = 0.52;
-      rock.position = new Vector3(x, terrainHeight(x, z) + size * 0.28, z);
+      rock.position = new Vector3(x, terrainHeight(this.map, x, z) + size * 0.28, z);
       rock.rotation = new Vector3(index * 0.17, index * 1.39, index * 0.09);
       rock.material = rockMaterial;
     });
@@ -228,8 +236,31 @@ export class GameWorld {
     beaconMaterial.diffuseColor = Color3.FromHexString("#F3A533");
     beaconMaterial.emissiveColor = Color3.FromHexString("#A85F11");
     const beacon = MeshBuilder.CreateCylinder("survey-beacon", { height: 5.5, diameterTop: 0.12, diameterBottom: 0.48, tessellation: 6 }, this.scene);
-    beacon.position = new Vector3(54, terrainHeight(54, 47) + 2.75, 47);
+    beacon.position = this.map.beacon.clone();
+    beacon.position.y = terrainHeight(this.map, beacon.position.x, beacon.position.z) + 2.75;
     beacon.material = beaconMaterial;
   }
-}
 
+  private createCraterHazards() {
+    const hazardMaterial = new StandardMaterial("deep-crater-warning", this.scene);
+    hazardMaterial.diffuseColor = Color3.FromHexString("#F3A533");
+    hazardMaterial.emissiveColor = Color3.FromHexString("#5A300B");
+    hazardMaterial.alpha = 0.78;
+    const floorMaterial = new StandardMaterial("deep-crater-floor", this.scene);
+    floorMaterial.diffuseColor = Color3.FromHexString("#29252A");
+    floorMaterial.emissiveColor = Color3.FromHexString("#08090C");
+    floorMaterial.alpha = 0.7;
+    this.map.craters.filter((crater) => crater.deep).forEach((crater, index) => {
+      const floor = MeshBuilder.CreateDisc(`deep-crater-floor-${index}`, { radius: crater.radius * 0.63, tessellation: 48 }, this.scene);
+      floor.rotation.x = Math.PI / 2;
+      floor.position = new Vector3(crater.x, terrainHeight(this.map, crater.x, crater.z) + 0.17, crater.z);
+      floor.material = floorMaterial;
+      this.hazardRings.push(floor);
+      const ring = MeshBuilder.CreateTorus(`deep-crater-limit-${index}`, { diameter: crater.radius * 1.55, thickness: 0.11, tessellation: 48 }, this.scene);
+      ring.rotation.x = Math.PI / 2;
+      ring.position = new Vector3(crater.x, terrainHeight(this.map, crater.x, crater.z) + 0.15, crater.z);
+      ring.material = hazardMaterial;
+      this.hazardRings.push(ring);
+    });
+  }
+}

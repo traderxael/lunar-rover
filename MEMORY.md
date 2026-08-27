@@ -6,3 +6,4 @@ La estética elegida es **Bitácora de Exploración Analógica**. La cámara pri
 
 La verificación visual se realizará desde el navegador mediante `?demo`, que debe mover el rover de forma determinista entre muestras para demostrar la escena sin requerir entrada manual. La comprobación técnica final debe incluir el tipo estático y la ausencia de errores de consola durante una sesión de prueba.
 
+La ampliación de mapas incorpora `?map=tranquility`, `?map=tycho` y `?map=selenite`. Cada sector cambia el punto de partida, las muestras, los cráteres, rocas, colores de superficie y condiciones de entorno. Fosa de Tycho usa cavidades profundas señalizadas con perímetros ámbar que penalizan una entrada; Cuenca de Selenita incorpora partículas de polvo, una veladura ambiental y consumo adicional durante el desplazamiento.

@@ -8,6 +8,8 @@
 | Textura de regolito lunar | Material del terreno y pequeñas tarjetas de interfaz. | Tile de 24 × 24 m en el terreno | `/manus-storage/lunar-regolith-tile_b1cfd882.png` |
 | Calcomanía de instrumentación | Detalle aplicado al chasis del rover y a paneles, y a placas de interfaz. | Placa de 1.8 × 0.7 m y 320 × 160 px en interfaz | `/manus-storage/rover-instrument-decal_a8453884.png` |
 | Emblema orbital del rover | Marca visual en cabecera, tarjeta de misión y favicon. | 64 × 64 px en HUD; 32 × 32 px para icono | `/manus-storage/lunar-rover-mark_4f238dab.png` |
+| Partículas de tormenta de polvo | Nubes de polvo en planos orientados a cámara para la Cuenca de Selenita. | 4–11 m por partícula, 66 instancias | `/manus-storage/lunar-dust-storm-particles_949628da.png` |
+| Regolito de cráter profundo | Material de superficie para Fosa de Tycho y sus anillos de riesgo. | Tile de 20 × 20 m | `/manus-storage/deep-crater-regolith-tile_d844fa40.png` |
 
 ## Notas de implementación
 

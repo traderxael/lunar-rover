@@ -28,3 +28,12 @@ Se creará un juego 3D de navegador de pantalla completa donde el jugador conduc
   - La escena coincide con la referencia: cámara elevada oblicua, paleta grafito/marfil, acentos cian y ámbar, y densidad de objetos moderada.
   - No hay errores en la consola durante una partida y la captura muestra jugabilidad real mediante el modo `?demo`.
 
+## Expansión de mapas — agosto de 2026
+
+| Mapa | Carácter de exploración | Riesgo principal | Requisito de verificación |
+|---|---|---|---|
+| **Mare Tranquillitatis** | Ruta introductoria, amplia y estable, con cráteres suaves y visibilidad clara. | Navegación entre rocas y pequeños desniveles. | El jugador puede iniciar, recoger muestras y aprender los controles sin penalización ambiental. |
+| **Fosa de Tycho** | Cuenca de roca pálida interrumpida por tres cráteres profundos de bordes muy empinados. | Entrar en una zona de cráter profundo reduce velocidad y drena la energía; la ruta segura bordea los anillos ámbar. | Las áreas de riesgo se ven antes de entrar, modifican el manejo y pueden evitarse por completo. |
+| **Cuenca de Selenita** | Paisaje oscuro, compacto y con una tormenta de polvo transversal que avanza en oleadas. | La tormenta reduce parcialmente la visibilidad, atenúa la telemetría y aumenta el consumo en los tramos expuestos. | Las partículas cruzan el campo de juego de forma continua, no bloquean los controles y el estado de tormenta se lee en HUD. |
+
+La selección de mapa estará disponible antes de iniciar la misión. Cada mapa redefine el punto de partida, las muestras, las rocas, las cavidades y el tono de iluminación; no será un mero cambio cosmético.

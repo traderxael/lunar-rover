@@ -6,10 +6,19 @@ import { useEffect, useRef } from "react";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { createGameScene, type GameHandle } from "@/game/scene";
 import { ASSET_URLS } from "@/game/assets";
+import { getMissionMap, MISSION_MAPS } from "@/game/MissionMap";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const startedRef = useRef(false);
+  const activeMap = getMissionMap();
+
+  const chooseMap = (mapId: string) => {
+    const query = new URLSearchParams(window.location.search);
+    query.set("map", mapId);
+    query.delete("demo");
+    window.location.search = query.toString();
+  };
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -47,11 +56,12 @@ export default function GameCanvas() {
     <main className="game-shell" aria-label="Juego Lunar Rover Expedition">
       <canvas ref={canvasRef} className="game-canvas" style={{ touchAction: "none" }} />
       <section id="mission-hud" className="mission-hud" aria-live="polite">
+        <div className={`storm-veil ${activeMap.storm.active ? "is-active" : ""}`} aria-hidden="true" />
         <header className="mission-header">
           <div className="brand-lockup">
             <img src={ASSET_URLS.logo} alt="Emblema orbital del rover" className="brand-mark" />
             <div>
-              <p className="eyebrow">Misión de superficie · 01</p>
+              <p className="eyebrow">Misión de superficie · {activeMap.index}</p>
               <h1>Lunar Rover <span>Expedition</span></h1>
             </div>
           </div>
@@ -68,13 +78,14 @@ export default function GameCanvas() {
             <div><dt>Muestras</dt><dd id="sample-value">0/5</dd></div>
             <div><dt>Objetivo</dt><dd id="distance-value">— m</dd></div>
             <div><dt>Velocidad</dt><dd id="speed-value">0 km/h</dd></div>
+            <div><dt>Sector</dt><dd id="map-title">{activeMap.index} · {activeMap.name}</dd></div>
           </dl>
-          <div className="terrain-code"><span>Terrain grid</span><b>42° N · 18° E</b></div>
+          <div className="terrain-code"><span>Estado de ruta</span><b id="storm-value">Visibilidad · plena</b></div>
         </aside>
 
         <section className="mission-brief" aria-label="Objetivo de la misión">
           <p className="panel-kicker">Objetivo operativo</p>
-          <p id="mission-prompt">Recupera cinco muestras antes de que el rover agote su energía.</p>
+          <p id="mission-prompt">{activeMap.objectiveCopy}</p>
           <div className="control-legend"><span><kbd>WASD</kbd> o <kbd>← ↑ ↓ →</kbd> conducir</span><span><kbd>Espacio</kbd> impulso</span><span><kbd>R</kbd> reiniciar</span></div>
         </section>
 
@@ -82,9 +93,19 @@ export default function GameCanvas() {
           <img src={ASSET_URLS.visualTarget} alt="Referencia de la misión lunar" />
           <div className="intro-shade" />
           <div className="intro-content">
-            <p className="eyebrow">Bitácora de exploración · cráter Arcturus</p>
+            <p className="eyebrow">Bitácora de exploración · {activeMap.name}</p>
             <h2>La ruta está marcada.<br /><em>Haz que cuente.</em></h2>
-            <p>Recupera cinco núcleos de regolito. Cada metro consume energía; cada impulso modifica la trayectoria.</p>
+            <p>{activeMap.briefing}</p>
+            <div className="map-selector" aria-label="Seleccionar mapa de exploración">
+              <p>Selecciona una zona de aterrizaje</p>
+              <div className="map-options">
+                {MISSION_MAPS.map((map) => (
+                  <button key={map.id} type="button" onClick={() => chooseMap(map.id)} className={`map-option ${map.id === activeMap.id ? "is-active" : ""}`}>
+                    <span>{map.index}</span><strong>{map.name}</strong><small>{map.subtitle}</small>
+                  </button>
+                ))}
+              </div>
+            </div>
             <button id="mission-start" className="primary-action">Iniciar exploración <span>↗</span></button>
           </div>
         </div>
@@ -104,4 +125,3 @@ export default function GameCanvas() {
     </main>
   );
 }
-

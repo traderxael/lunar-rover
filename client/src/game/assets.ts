@@ -7,5 +7,6 @@ export const ASSET_URLS = {
   regolith: "/manus-storage/lunar-regolith-tile_b1cfd882.png",
   instrumentDecal: "/manus-storage/rover-instrument-decal_a8453884.png",
   logo: "/manus-storage/lunar-rover-mark_4f238dab.png",
+  dustStorm: "/manus-storage/lunar-dust-storm-particles_949628da.png",
+  deepCraterRegolith: "/manus-storage/deep-crater-regolith-tile_d844fa40.png",
 } as const;
-

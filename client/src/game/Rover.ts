@@ -15,14 +15,15 @@ export type RoverStep = { distance: number; usedEnergy: number; boosted: boolean
 export class Rover {
   readonly root: TransformNode;
   private readonly wheels: Mesh[] = [];
-  private readonly origin = new Vector3(-47, 0, 36);
+  private readonly origin: Vector3;
   private speed = 0;
   private wheelPhase = 0;
   private readonly maxSpeed = 9.7;
   private readonly maxReverse = -4.2;
 
-  constructor(scene: Scene, private readonly surfaceHeight: (x: number, z: number) => number) {
+  constructor(scene: Scene, private readonly surfaceHeight: (x: number, z: number) => number, start: Vector3) {
     this.root = new TransformNode("lunar-rover", scene);
+    this.origin = start.clone();
     this.createModel(scene);
     this.reset();
   }
@@ -33,6 +34,16 @@ export class Rover {
 
   get currentSpeed() {
     return Math.abs(this.speed);
+  }
+
+  repelFromCrater(x: number, z: number, safeRadius: number) {
+    const awayX = this.root.position.x - x;
+    const awayZ = this.root.position.z - z;
+    const length = Math.hypot(awayX, awayZ) || 1;
+    this.root.position.x = x + (awayX / length) * (safeRadius + 0.7);
+    this.root.position.z = z + (awayZ / length) * (safeRadius + 0.7);
+    this.root.position.y = this.surfaceHeight(this.root.position.x, this.root.position.z) + 0.83;
+    this.speed *= 0.24;
   }
 
   reset() {
@@ -99,7 +110,10 @@ export class Rover {
     const panelMaterial = new StandardMaterial("rover-panel", scene);
     panelMaterial.diffuseColor = Color3.FromHexString("#252D35");
     panelMaterial.specularColor = Color3.FromHexString("#56616A");
-    panelMaterial.diffuseTexture = new Texture(ASSET_URLS.instrumentDecal, scene, true, false);
+    const panelDecal = new Texture(ASSET_URLS.instrumentDecal, scene, true, false);
+    panelDecal.onLoadObservable.addOnce(() => {
+      panelMaterial.diffuseTexture = panelDecal;
+    });
 
     const wheelMaterial = new StandardMaterial("rover-wheels", scene);
     wheelMaterial.diffuseColor = Color3.FromHexString("#202326");
@@ -152,4 +166,3 @@ export class Rover {
     lamp.range = 7;
   }
 }
-

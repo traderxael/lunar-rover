@@ -10,6 +10,10 @@ export type HudSnapshot = {
   speed: number;
   state: MissionState;
   boosted?: boolean;
+  mapName: string;
+  mapIndex: string;
+  stormLabel: string;
+  hazard: boolean;
 };
 
 export class Hud {
@@ -40,6 +44,8 @@ export class Hud {
     this.setText("distance-value", `${Math.ceil(snapshot.targetDistance)} m`);
     this.setText("speed-value", `${Math.round(snapshot.speed * 9.6)} km/h`);
     this.setText("mission-time", this.clock(snapshot.elapsed));
+    this.setText("map-title", `${snapshot.mapIndex} · ${snapshot.mapName}`);
+    this.setText("storm-value", snapshot.stormLabel);
 
     const energyBar = document.getElementById("energy-bar");
     if (energyBar) {
@@ -49,10 +55,12 @@ export class Hud {
 
     const prompt = document.getElementById("mission-prompt");
     if (prompt) {
-      prompt.textContent = snapshot.boosted
+      prompt.textContent = snapshot.hazard
+        ? "Borde inestable: retrocede y bordea el cráter profundo"
+        : snapshot.boosted
         ? "Impulso activado — controla la inercia"
         : snapshot.state === "active"
-          ? `Muestra ${Math.min(snapshot.collected + 1, snapshot.total)} localizada al este de la ruta`
+          ? `Muestra ${Math.min(snapshot.collected + 1, snapshot.total)} localizada: vigila el estado de ruta`
           : "Esperando la siguiente instrucción";
     }
 
@@ -63,11 +71,11 @@ export class Hud {
     if (snapshot.state === "success") {
       result?.classList.add("is-visible");
       if (resultTitle) resultTitle.textContent = "Muestras aseguradas";
-      if (resultCopy) resultCopy.textContent = `Completaste la ruta en ${this.clock(snapshot.elapsed)}. La bitácora queda lista para transmisión.`;
+      if (resultCopy) resultCopy.textContent = `Completaste ${snapshot.mapName} en ${this.clock(snapshot.elapsed)}. La bitácora queda lista para transmisión.`;
     } else if (snapshot.state === "depleted") {
       result?.classList.add("is-visible");
       if (resultTitle) resultTitle.textContent = "Energía agotada";
-      if (resultCopy) resultCopy.textContent = `Recuperaste ${snapshot.collected} de ${snapshot.total} muestras. Calcula una ruta más corta e inténtalo de nuevo.`;
+      if (resultCopy) resultCopy.textContent = `Recuperaste ${snapshot.collected} de ${snapshot.total} muestras en ${snapshot.mapName}. Calcula una ruta más corta e inténtalo de nuevo.`;
     } else {
       result?.classList.remove("is-visible");
     }
@@ -91,4 +99,3 @@ export class Hud {
     return `${minutes}:${remainder}`;
   }
 }
-
