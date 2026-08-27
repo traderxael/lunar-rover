@@ -158,7 +158,7 @@ export class GameWorld {
       this.collected += 1;
       if (this.collected >= this.samples.length) {
         this.state = "success";
-        this.completion = recordMission(this.map.id, this.elapsed, this.energy);
+        this.completion = recordMission(this.map.id, this.map.name, this.elapsed, this.energy, this.optionalCollected, this.secondaryMarkers.length);
       } else {
         this.energy = Math.min(100, this.energy + 8);
         this.updateObjectiveMarker();
@@ -287,6 +287,7 @@ export class GameWorld {
     const labels = { tycho: "Fosa de Tycho", selenite: "Cuenca de Selenita", tranquility: "Mare Tranquillitatis" };
     const notes: string[] = [];
     if (this.completion.newUnlock) notes.push(`Nuevo sector desbloqueado: ${labels[this.completion.newUnlock]}.`);
+    notes.push(`Puntuación de expedición: ${this.completion.score.toLocaleString("es-ES")} · puesto local #${this.completion.rank}.`);
     if (this.optionalCollected === this.secondaryMarkers.length) notes.push(`Desafío secundario completado: ${this.map.secondary.reward}.`);
     if (!notes.length && this.optionalNewBest) notes.push(`Nuevo avance opcional registrado: ${this.optionalCollected}/${this.secondaryMarkers.length}.`);
     if (!notes.length && this.completion.grade === "C") notes.push("El grado C registra la misión; para desbloquear el próximo sector consigue grado B.");

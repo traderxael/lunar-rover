@@ -8,6 +8,7 @@ import { createGameScene, type GameHandle } from "@/game/scene";
 import { ASSET_URLS } from "@/game/assets";
 import { getMissionMap, MISSION_MAPS } from "@/game/MissionMap";
 import { getProgress, isMapUnlocked, requirementLabel } from "@/game/Progression";
+import LeaderboardPanel from "@/components/LeaderboardPanel";
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -69,6 +70,7 @@ export default function GameCanvas() {
             </div>
           </div>
           <div className="mission-clock"><span>Tiempo de misión</span><strong id="mission-time">00:00</strong></div>
+          <LeaderboardPanel />
         </header>
 
         <aside className="telemetry-panel" aria-label="Telemetría del rover">

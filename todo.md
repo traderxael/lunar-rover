@@ -27,4 +27,14 @@
 - [x] Guardar el estado de los desafíos secundarios en el progreso local.
 - [x] Mostrar avance opcional en la telemetría y reconocimiento en el informe final.
 - [x] Validar las rutas principales y opcionales de los tres mapas.
-- [ ] Guardar el checkpoint y sincronizar la ampliación con GitHub.
+- [x] Guardar el checkpoint y sincronizar la ampliación con GitHub.
+
+## Clasificación local de expediciones
+
+- [x] Revisar los resultados de misión y el progreso local disponibles.
+- [x] Definir fórmula de puntuación y criterios de desempate transparentes.
+- [x] Guardar las mejores expediciones en una clasificación local persistente.
+- [x] Añadir acceso, filtro por sector y tabla ordenada de récords.
+- [x] Mostrar la puntuación lograda dentro del informe final de misión.
+- [x] Validar ordenamiento, persistencia y estado vacío de la clasificación.
+- [ ] Guardar el checkpoint y sincronizar la actualización con GitHub.

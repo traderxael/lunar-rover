@@ -57,3 +57,9 @@ El progreso se guarda en el navegador. Al completar una misión se conservará e
 | **Cuenca de Selenita** | **Muestreo eólico** | Recuperar tres sondas anemométricas mientras la tormenta de polvo está activa. | *Analista de selenita*. |
 
 Estos objetivos no condicionan el grado ni el desbloqueo de sectores. Cada uno se puede recoger en cualquier orden y queda registrado de forma local como el mejor avance del sector, con un reconocimiento en el informe final para estimular rutas alternativas.
+
+## Clasificación local de expediciones
+
+Cada finalización exitosa genera una entrada local con sector, grado, puntuación, tiempo, energía y desafío auxiliar. La puntuación se calcula como **(1.000 + energía restante × 10 + hitos auxiliares × 300 + bonificación de grado − segundos de misión × 3) × dificultad del sector**, limitada a cero. Las bonificaciones son S = 900, A = 600, B = 350 y C = 100; los multiplicadores de dificultad son 1,00 para Tranquillitatis, 1,25 para Tycho y 1,50 para Selenita.
+
+La tabla mantiene las 15 mejores expediciones locales y ordena por puntuación descendente, menor tiempo y mayor energía. Puede filtrarse por sector y no contiene datos simulados: antes de completar una expedición presentará un estado vacío claro.
