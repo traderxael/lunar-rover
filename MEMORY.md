@@ -39,3 +39,7 @@ La demostración parte de una historia previa de Selenita y añade sus retornos,
 El historial clasifica los descubrimientos con cuatro niveles, siempre visibles mediante texto, símbolo y color: **Señal** para infraestructura rutinaria, **Notable** para ciencia y retornos relevantes, **Raro** para sectores e hitos, e **Hito mayor** para fundaciones y recompensas permanentes. `DiscoveryManager` deriva la rareza cuando una entrada heredada no la contiene y la persiste en los nuevos registros; por tanto, no fue necesario modificar ni invalidar guardados v3 existentes.
 
 La pestaña Bitácora muestra una leyenda y una etiqueta compacta por evento, y repite la rareza en el detalle seleccionado. La demostración utiliza el mismo clasificador para evidenciar los cuatro niveles sobre una historia completa de Selenita.
+
+## Filtro por rareza
+
+La bitácora permite combinar de forma acumulativa un filtro de **tipo** con un filtro de **rareza**. El filtrado se mantiene en `DiscoveryManager`, donde `visibleDiscoveries` recibe ambos criterios y compara los niveles mediante el mismo clasificador compatible que asigna las rarezas. La interfaz conserva el botón activo con `aria-pressed`, comunica cada control con un rótulo propio y explica los cruces sin coincidencias con un estado vacío accionable.

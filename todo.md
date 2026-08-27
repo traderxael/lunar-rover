@@ -86,3 +86,10 @@
 - [x] Actualizar demostración, documentación y vistas responsive.
 - [x] Verificar persistencia, filtros, contraste y compilación.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar los marcadores.
+
+## Filtro de rareza del historial
+
+- [x] Definir la combinación entre filtros por tipo y rareza.
+- [x] Integrar controles de rareza, estado vacío y señales accesibles.
+- [x] Verificar interacción, persistencia, diseño móvil y compilación.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar el filtro.

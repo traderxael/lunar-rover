@@ -6,6 +6,7 @@ import type { DiscoveryEntry, DiscoveryKind, DiscoveryRarity, TycoonState } from
 
 export type DiscoveryDraft = Omit<DiscoveryEntry, "id" | "cycle" | "occurredAt"> & { id: string; cycle?: number; occurredAt?: number };
 export type DiscoveryFilter = "all" | DiscoveryKind;
+export type DiscoveryRarityFilter = "all" | DiscoveryRarity;
 
 const HISTORY_LIMIT = 80;
 
@@ -25,8 +26,8 @@ export function recordDiscovery(state: TycoonState, draft: DiscoveryDraft): Tyco
 
 export function recordDiscoveries(state: TycoonState, drafts: DiscoveryDraft[]): TycoonState { return drafts.reduce(recordDiscovery, state); }
 
-export function visibleDiscoveries(state: TycoonState, filter: DiscoveryFilter) {
-  const entries = filter === "all" ? state.discoveries : state.discoveries.filter((entry) => entry.kind === filter);
+export function visibleDiscoveries(state: TycoonState, filter: DiscoveryFilter, rarity: DiscoveryRarityFilter = "all") {
+  const entries = state.discoveries.filter((entry) => (filter === "all" || entry.kind === filter) && (rarity === "all" || rarityForDiscovery(entry) === rarity));
   return [...entries].sort((a, b) => b.occurredAt - a.occurredAt || b.cycle - a.cycle);
 }
 

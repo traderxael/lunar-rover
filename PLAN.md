@@ -111,3 +111,7 @@ El modo `?demo` siembra una bitácora de Selenita con módulos, ciencia, sector,
 ### Marcadores de rareza
 
 La bitácora añade cuatro escalas de relevancia: **Señal**, **Notable**, **Raro** e **Hito mayor**. La regla se deriva centralmente del tipo de evento y puede guardarse en la entrada nueva; los eventos previos sin este campo reciben la misma clasificación al leerse. Cada escala se representa con texto, un glifo y contraste propio para que la importancia siga siendo perceptible sin depender del color.
+
+#### Filtro de rareza
+
+El historial añade un segundo selector para **Todas**, **Señal**, **Notable**, **Raro** e **Hito mayor**. Este selector se combina con el filtro de tipo existente, no lo reemplaza. Si una intersección no tiene eventos, la interfaz conserva los controles y ofrece una instrucción para modificar cualquiera de los dos criterios.

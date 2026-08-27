@@ -33,7 +33,7 @@ El juego evoluciona de un flujo de misión lineal a una simulación de base pers
 | `ResearchManager` | Controla las cuatro ramas tecnológicas, requisitos, efectos y las referencias históricas del codex. | Tecnologías desbloqueadas y datos científicos. |
 | `ExpeditionManager` | Coordina el rover manual/automático con los recursos entregados al asentamiento. | Estado, duración, resultados y carga de expedición. |
 | `CampaignManager` | Define tres programas de largo plazo, valida requisitos, actualiza hitos por ciclo o retorno y aplica recompensas únicas. | Campaña activa, hitos completados, métricas acumuladas y bonos permanentes. |
-| `DiscoveryManager` | Añade, filtra y clasifica entradas de descubrimiento de forma inmutable, ordenada e idempotente. | Máximo de 80 eventos, con tipo, rareza, ciclo, marca temporal y recompensa opcional. |
+| `DiscoveryManager` | Añade, clasifica y filtra por tipo y rareza entradas de descubrimiento de forma inmutable, ordenada e idempotente. | Máximo de 80 eventos, con tipo, rareza, ciclo, marca temporal y recompensa opcional. |
 | `BaseWorld` | Propietario Babylon de las mallas de edificios, conectores, nodos y alertas del mapa. | Reconstruye mallas a partir de `TycoonState`, no almacena reglas. |
 | `DemoManager` | Crea un snapshot de exhibición válido y avanza ciclos/expediciones de forma determinista para `?demo`. | No escribe almacenamiento local. |
 | `TycoonHud` | Contrato de lectura para recursos, selección, construcción, investigación, alertas y bitácora. | No persiste: recibe snapshots del estado. |
@@ -48,6 +48,7 @@ El juego evoluciona de un flujo de misión lineal a una simulación de base pers
 6. **Campañas científicas:** las campañas actualizan métricas acumuladas después de economía y expedición; se guarda una línea base al iniciarlas. **Verificación:** ningún hito o efecto permanente se repite tras recargar, ejecutar ciclos consecutivos o pulsar una acción varias veces.
 7. **Historial de base:** cada evento relevante se registra desde su acción única y no desde el render de la interfaz. **Verificación:** los filtros, el detalle y las recompensas persisten tras recargar sin entradas duplicadas.
 8. **Rareza legible:** la relevancia del evento se expresa con etiqueta, símbolo y color, no sólo con color. **Verificación:** entradas v3 anteriores reciben una rareza derivada y las nuevas conservan su clasificación tras recargar.
+9. **Filtros compuestos:** tipo y rareza se aplican en la misma consulta pura. **Verificación:** Hito mayor + Recompensas muestra sólo recompensas permanentes; Ciencia + Hito mayor presenta el estado vacío sin romper la selección.
 
 El esquema de guardado de base evoluciona a la versión 3 dentro de la misma clave de almacenamiento. La migración conserva el snapshot existente: desde v1 añade campañas vacías y desde v2 consolida en la bitácora la infraestructura, investigación y recompensas ya obtenidas. No elimina ni vuelve a calcular el bono de progresión rover heredado.
 
