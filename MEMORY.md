@@ -43,3 +43,7 @@ La pestaña Bitácora muestra una leyenda y una etiqueta compacta por evento, y 
 ## Filtro por rareza
 
 La bitácora permite combinar de forma acumulativa un filtro de **tipo** con un filtro de **rareza**. El filtrado se mantiene en `DiscoveryManager`, donde `visibleDiscoveries` recibe ambos criterios y compara los niveles mediante el mismo clasificador compatible que asigna las rarezas. La interfaz conserva el botón activo con `aria-pressed`, comunica cada control con un rótulo propio y explica los cruces sin coincidencias con un estado vacío accionable.
+
+## Ordenamiento del historial
+
+`DiscoveryManager` amplía su consulta pura con tres órdenes no persistentes: ciclo descendente, ciclo ascendente y rareza descendente. En el orden por rareza, los Hitos mayores anteceden a Raros, Notables y Señales; ciclo, marca temporal e identificador estabilizan los empates. El selector es independiente de los filtros activos, conserva la entrada seleccionada cuando aún coincide y no altera el guardado local.

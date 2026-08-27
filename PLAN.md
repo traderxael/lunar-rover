@@ -115,3 +115,7 @@ La bitácora añade cuatro escalas de relevancia: **Señal**, **Notable**, **Rar
 #### Filtro de rareza
 
 El historial añade un segundo selector para **Todas**, **Señal**, **Notable**, **Raro** e **Hito mayor**. Este selector se combina con el filtro de tipo existente, no lo reemplaza. Si una intersección no tiene eventos, la interfaz conserva los controles y ofrece una instrucción para modificar cualquiera de los dos criterios.
+
+#### Ordenamiento
+
+La bitácora permite ordenar la vista filtrada por **Ciclo descendente**, **Ciclo ascendente** o **Rareza**. El orden de rareza prioriza Hitos mayores, Raros, Notables y Señales; el ciclo y la marca temporal resuelven empates para que las capturas y la navegación sean deterministas.

@@ -93,3 +93,10 @@
 - [x] Integrar controles de rareza, estado vacío y señales accesibles.
 - [x] Verificar interacción, persistencia, diseño móvil y compilación.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar el filtro.
+
+## Ordenamiento del historial
+
+- [x] Definir el orden por ciclo y rareza compatible con filtros activos.
+- [x] Integrar selector de orden, desempates deterministas y señales accesibles.
+- [x] Verificar ordenamiento, responsividad, persistencia y compilación.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar el ordenamiento.
