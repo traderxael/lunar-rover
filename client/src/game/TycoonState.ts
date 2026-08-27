@@ -56,8 +56,11 @@ export type CampaignBonuses = {
   energyReserve: number;
 };
 
+export type DiscoveryKind = "foundation" | "infrastructure" | "research" | "expedition" | "milestone" | "reward" | "sector";
+export type DiscoveryEntry = { id: string; kind: DiscoveryKind; title: string; detail: string; cycle: number; occurredAt: number; reward?: string };
+
 export type TycoonState = {
-  version: 2;
+  version: 3;
   sector: SectorId;
   cycle: number;
   resources: Resources;
@@ -74,11 +77,13 @@ export type TycoonState = {
   activeCampaignId: CampaignId | null;
   campaignMetrics: CampaignMetrics;
   campaignBonuses: CampaignBonuses;
+  discoveries: DiscoveryEntry[];
 };
 
 export const TYCOON_STORAGE_KEY = "lunar-science-base-tycoon-v1";
 const LEGACY_STORAGE_KEY = "lunar-rover-expedition-progress-v1";
 const campaignIds: CampaignId[] = ["surface-pioneers", "cooperation-protocol", "lunar-resource-cycle"];
+const discoveryKinds: DiscoveryKind[] = ["foundation", "infrastructure", "research", "expedition", "milestone", "reward", "sector"];
 
 export const resourceTemplate = (): Resources => ({ energy: 0, oxygen: 0, water: 0, regolith: 0, data: 0 });
 
@@ -93,10 +98,15 @@ export function campaignProgressTemplate(): Record<CampaignId, CampaignProgress>
 export const campaignMetricsTemplate = (): CampaignMetrics => ({ cyclesClosed: 0, nominalCycles: 0, roverReturns: 0, regolithCollected: 0, dataGenerated: 0, dustCyclesWithReserve: 0 });
 export const campaignBonusesTemplate = (): CampaignBonuses => ({ expeditionRewardBonus: 0, dataRateBonus: 0, waterRateBonus: 0, energyReserve: 0 });
 
+export function initialDiscoveries(now = Date.now()): DiscoveryEntry[] {
+  return [{ id: "foundation:landing", kind: "foundation", title: "Base de aterrizaje operativa", detail: "Los módulos iniciales quedaron registrados en Mare Tranquillitatis.", cycle: 1, occurredAt: now }];
+}
+
 export function createInitialTycoonState(): TycoonState {
+  const now = Date.now();
   const legacyBonusData = legacyResearchBonus();
   return {
-    version: 2,
+    version: 3,
     sector: "tranquility",
     cycle: 1,
     resources: { energy: 58, oxygen: 62, water: 70, regolith: 42, data: 6 + legacyBonusData },
@@ -109,13 +119,14 @@ export function createInitialTycoonState(): TycoonState {
     research: [],
     alerts: [],
     expeditions: [{ id: "survey-tranquility", sector: "tranquility", state: "ready", secondsRemaining: 0, reward: { regolith: 9, data: 7 } }],
-    startedAt: Date.now(),
-    lastSavedAt: Date.now(),
+    startedAt: now,
+    lastSavedAt: now,
     legacyBonusData,
     campaigns: campaignProgressTemplate(),
     activeCampaignId: null,
     campaignMetrics: campaignMetricsTemplate(),
     campaignBonuses: campaignBonusesTemplate(),
+    discoveries: initialDiscoveries(now),
   };
 }
 
@@ -170,28 +181,54 @@ function normalizeCampaignBonuses(bonuses?: Partial<CampaignBonuses>): CampaignB
   }, fallback);
 }
 
+function normalizeDiscoveries(discoveries?: unknown): DiscoveryEntry[] {
+  if (!Array.isArray(discoveries)) return [];
+  return discoveries.reduce<DiscoveryEntry[]>((next, candidate) => {
+    if (!candidate || typeof candidate !== "object") return next;
+    const entry = candidate as Partial<DiscoveryEntry>;
+    if (typeof entry.id !== "string" || typeof entry.title !== "string" || typeof entry.detail !== "string" || !discoveryKinds.includes(entry.kind as DiscoveryKind)) return next;
+    next.push({ id: entry.id, kind: entry.kind as DiscoveryKind, title: entry.title, detail: entry.detail, cycle: typeof entry.cycle === "number" ? Math.max(1, Math.floor(entry.cycle)) : 1, occurredAt: typeof entry.occurredAt === "number" ? entry.occurredAt : Date.now(), ...(typeof entry.reward === "string" ? { reward: entry.reward } : {}) });
+    return next;
+  }, []).slice(-80);
+}
+
+function consolidatedDiscoveries(snapshot: { cycle?: number; buildings?: BaseBuilding[]; research?: string[]; campaigns?: Record<CampaignId, CampaignProgress> }): DiscoveryEntry[] {
+  const cycle = Math.max(1, snapshot.cycle ?? 1);
+  const occurredAt = Date.now();
+  const entries: DiscoveryEntry[] = [{ id: "foundation:archive", kind: "foundation", title: "Registro de base consolidado", detail: "La bitácora visual reunió los avances obtenidos antes de activar este archivo.", cycle, occurredAt }];
+  (snapshot.buildings ?? []).forEach((building) => entries.push({ id: `legacy:module:${building.id}`, kind: "infrastructure", title: `Módulo ${building.kind} confirmado`, detail: "Infraestructura existente incorporada al registro de la base.", cycle, occurredAt }));
+  (snapshot.research ?? []).forEach((research) => entries.push({ id: `legacy:research:${research}`, kind: "research", title: "Tecnología archivada", detail: `La investigación ${research} quedó consolidada en la bitácora.`, cycle, occurredAt }));
+  campaignIds.forEach((id) => { if (snapshot.campaigns?.[id]?.status === "complete") entries.push({ id: `legacy:reward:${id}`, kind: "reward", title: "Programa científico finalizado", detail: "La recompensa permanente del programa fue incorporada al historial.", cycle, occurredAt, reward: "Bonificación de red activa" }); });
+  return entries.slice(-80);
+}
+
 export function loadTycoonState(): TycoonState {
   try {
     const stored = window.localStorage.getItem(TYCOON_STORAGE_KEY);
     if (!stored) return createInitialTycoonState();
     const parsed = JSON.parse(stored) as Omit<Partial<TycoonState>, "version"> & { version?: number };
-    if ((parsed.version !== 1 && parsed.version !== 2) || !parsed.resources || !Array.isArray(parsed.buildings)) return createInitialTycoonState();
+    if ((parsed.version !== 1 && parsed.version !== 2 && parsed.version !== 3) || !parsed.resources || !Array.isArray(parsed.buildings)) return createInitialTycoonState();
     const fallback = createInitialTycoonState();
+    const buildings = parsed.buildings;
+    const research = Array.isArray(parsed.research) ? parsed.research : [];
+    const campaigns = normalizeCampaigns(parsed.campaigns);
+    const discoveries = normalizeDiscoveries(parsed.discoveries);
     return {
       ...fallback,
       ...parsed,
-      version: 2,
+      version: 3,
       resources: normalizeResources(parsed.resources),
       capacity: { ...fallback.capacity, ...normalizeResources(parsed.capacity) },
       crew: { ...fallback.crew, ...parsed.crew },
-      buildings: parsed.buildings,
-      research: Array.isArray(parsed.research) ? parsed.research : [],
+      buildings,
+      research,
       alerts: Array.isArray(parsed.alerts) ? parsed.alerts : [],
       expeditions: Array.isArray(parsed.expeditions) ? parsed.expeditions : fallback.expeditions,
-      campaigns: normalizeCampaigns(parsed.campaigns),
+      campaigns,
       activeCampaignId: campaignIds.includes(parsed.activeCampaignId as CampaignId) ? parsed.activeCampaignId as CampaignId : null,
       campaignMetrics: normalizeCampaignMetrics(parsed.campaignMetrics),
       campaignBonuses: normalizeCampaignBonuses(parsed.campaignBonuses),
+      discoveries: discoveries.length ? discoveries : consolidatedDiscoveries({ cycle: parsed.cycle, buildings, research, campaigns }),
     };
   } catch {
     return createInitialTycoonState();

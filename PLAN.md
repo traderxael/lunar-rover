@@ -95,3 +95,15 @@ La base añade tres programas de investigación persistentes y secuenciales. **P
 | Lectura de objetivos | Archivo con pestañas de tecnologías/campañas y monitor breve en operaciones. | Cada programa muestra requisito, hito actual, progreso y efecto antes de iniciarse. |
 
 La implementación mantiene la cronología internacional como contexto educativo y utiliza sellos abstractos propios, documentados en `ASSETS.md`, sin emblemas institucionales ni referencias de patrocinio. El modo `?demo` activa el programa de Selenita para que una captura muestre el avance por ciclos, el rover y una recompensa concluida.
+
+## Historial visual de descubrimientos
+
+El Archivo científico incorpora una tercera vista para la historia propia de cada base. El registro conserva instalaciones, reparaciones, investigaciones, accesos a sector, retornos del rover, inicio e hitos de campañas, y recompensas permanentes. Cada entrada tiene un identificador estable, tipo, ciclo, marca temporal, descripción y recompensa opcional; se ordena de lo más reciente a lo más antiguo y se limita a 80 eventos para no degradar el guardado local.
+
+| Riesgo | Enfoque | Verificación |
+|---|---|---|
+| Eventos repetidos | Un gestor puro descarta entradas con el mismo identificador antes de persistirlas. | Reabrir, recargar o cerrar ciclos no duplica una recompensa ni un hito. |
+| Partidas existentes | El estado v3 normaliza un historial previo o lo reconstruye desde infraestructura, investigación y campañas completadas. | Una partida v1/v2 conserva sus recursos y recibe una bitácora legible al primer inicio. |
+| Lectura visual | Filtros por tipo, una ruta cronológica y un panel de detalle separan listas densas de la recompensa seleccionada. | El historial es navegable con teclado y conserva legibilidad tanto en escritorio como en móvil. |
+
+El modo `?demo` siembra una bitácora de Selenita con módulos, ciencia, sector, hitos, retornos y dos recompensas. Al avanzar, agrega eventos deterministas para presentar el historial en una captura sin tocar partidas reales.

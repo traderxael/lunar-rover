@@ -69,3 +69,12 @@
 - [x] Generar y registrar los sellos abstractos de programa sin marcas oficiales.
 - [x] Verificar migración, bloqueo, progreso, recompensa única, recarga y responsividad.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar la ampliación.
+
+## Historial visual de descubrimientos
+
+- [x] Definir eventos, recompensas y migración compatible del historial persistente.
+- [x] Registrar de forma determinista descubrimientos, campañas y recompensas de base.
+- [x] Integrar una línea de tiempo interactiva con filtros, detalle y estados vacíos.
+- [x] Actualizar el modo demostración y documentar la nueva arquitectura.
+- [x] Verificar guardado, recarga, interacción, accesibilidad y diseño móvil.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar el historial.

@@ -16,6 +16,8 @@ import ScienceArchive from "@/components/ScienceArchive";
 import { BASE_SECTORS, changeSector, canAccessSector } from "@/game/SectorManager";
 import { advanceDemoStep, createDemoTycoonState } from "@/game/DemoManager";
 import { campaignProgressFor, evaluateCampaignProgress, getCampaign, startCampaign } from "@/game/CampaignManager";
+import { recordDiscoveries, recordDiscovery, type DiscoveryDraft } from "@/game/DiscoveryManager";
+import { RESEARCH_NODES } from "@/game/ResearchManager";
 
 const RESOURCE_META: Array<{ key: ResourceKey; label: string; unit: string; tone: "amber" | "cyan" }> = [
   { key: "energy", label: "Energía", unit: "kWh", tone: "amber" },
@@ -73,7 +75,7 @@ export default function GameCanvas() {
   useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
 
   useEffect(() => {
-    if (state.version === 2 && state.campaigns && state.campaignMetrics && state.campaignBonuses) return;
+    if (state.version === 3 && state.campaigns && state.campaignMetrics && state.campaignBonuses && state.discoveries) return;
     const migrated = loadTycoonState();
     stateRef.current = migrated;
     setState(migrated);
@@ -102,12 +104,18 @@ export default function GameCanvas() {
     if (!result.ok) { setNotice(result.reason); return; }
     const nextFree = BUILD_NODES.find((node) => !result.state.buildings.some((building) => building.nodeId === node.id));
     if (nextFree) setSelectedNode(nextFree.id);
-    commit(result.state, result.reason);
+    const built = result.state.buildings.find((building) => !state.buildings.some((previous) => previous.id === building.id));
+    const definition = BUILDINGS.find((building) => building.kind === kind)!;
+    const next = built ? recordDiscovery(result.state, { id: `infrastructure:${built.id}`, kind: "infrastructure", title: `${definition.shortName} instalado`, detail: `El módulo quedó conectado en el nodo ${BUILD_NODES.find((node) => node.id === nodeId)?.label ?? nodeId}.` }) : result.state;
+    commit(next, result.reason);
   };
 
   const repair = (buildingId: string) => {
     const result = repairBuilding(state, buildingId);
-    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+    if (!result.ok) { setNotice(result.reason); return; }
+    const building = result.state.buildings.find((candidate) => candidate.id === buildingId);
+    const label = building ? BUILDINGS.find((definition) => definition.kind === building.kind)?.shortName ?? "Módulo" : "Módulo";
+    commit(recordDiscovery(result.state, { id: `repair:${buildingId}:${state.cycle}`, kind: "infrastructure", title: `${label} recalibrado`, detail: "La integridad del módulo fue restaurada con regolito de mantenimiento." }), result.reason);
   };
 
   const runCycle = () => {
@@ -115,6 +123,10 @@ export default function GameCanvas() {
     const expedition = advanceExpeditions(economyState);
     const campaign = evaluateCampaignProgress(state, expedition.state, Boolean(expedition.completed));
     const milestoneTitle = campaign.milestone && state.activeCampaignId ? getCampaign(state.activeCampaignId).milestones.find((milestone) => milestone.id === campaign.milestone)?.title : null;
+    const discoveries: DiscoveryDraft[] = [];
+    if (expedition.completed) discoveries.push({ id: `expedition:${expedition.completed.id}:${expedition.completed.completedAt ?? campaign.state.cycle}`, kind: "expedition", title: "Carga de prospección recibida", detail: `El rover transfirió ${expeditionRewardLabel(expedition.completed.reward)} a la base.`, reward: expeditionRewardLabel(expedition.completed.reward) });
+    if (campaign.milestone && state.activeCampaignId) discoveries.push({ id: `milestone:${state.activeCampaignId}:${campaign.milestone}`, kind: "milestone", title: "Hito científico confirmado", detail: `${milestoneTitle ?? "Objetivo"} quedó validado en la bitácora de misión.` });
+    if (campaign.completed) discoveries.push({ id: `reward:${campaign.completed}:completion`, kind: "reward", title: `${getCampaign(campaign.completed).title} completado`, detail: "El programa alcanzó sus objetivos y dejó una mejora permanente en la red.", reward: getCampaign(campaign.completed).reward });
     const note = campaign.completed
       ? `${getCampaign(campaign.completed).title} completado. Recompensa permanente aplicada a la red.`
       : milestoneTitle
@@ -122,12 +134,14 @@ export default function GameCanvas() {
         : expedition.completed
           ? `Exploración concluida: ${expeditionRewardLabel(expedition.completed.reward)} transferidos a la base.`
           : `Ciclo ${campaign.state.cycle} cerrado. La red y el soporte vital fueron recalculados.`;
-    commit(campaign.state, note);
+    commit(recordDiscoveries(campaign.state, discoveries), note);
   };
 
   const research = (id: string) => {
     const result = completeResearch(state, id);
-    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+    if (!result.ok) { setNotice(result.reason); return; }
+    const researchNode = RESEARCH_NODES.find((node) => node.id === id);
+    commit(recordDiscovery(result.state, { id: `research:${id}`, kind: "research", title: researchNode?.title ?? "Tecnología confirmada", detail: researchNode ? `${researchNode.description} ${researchNode.effect}` : "Investigación incorporada al archivo científico." }), result.reason);
   };
 
   const launchExpedition = () => {
@@ -138,12 +152,16 @@ export default function GameCanvas() {
 
   const launchCampaign = (id: NonNullable<TycoonState["activeCampaignId"]>) => {
     const result = startCampaign(state, id);
-    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+    if (!result.ok) { setNotice(result.reason); return; }
+    const campaign = getCampaign(id);
+    commit(recordDiscovery(result.state, { id: `campaign:${id}:started`, kind: "milestone", title: `${campaign.title} iniciado`, detail: `Programa activado. Primer hito: ${campaign.milestones[0].title}.` }), result.reason);
   };
 
   const selectSector = (id: TycoonState["sector"]) => {
     const result = changeSector(state, id);
-    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+    if (!result.ok) { setNotice(result.reason); return; }
+    const sector = BASE_SECTORS.find((candidate) => candidate.id === id);
+    commit(recordDiscovery(result.state, { id: `sector:${id}`, kind: "sector", title: `${sector?.name ?? id} habilitado`, detail: "El equipo científico inició operaciones en este nuevo sector de asentamiento." }), result.reason);
   };
 
   return (
@@ -163,6 +181,8 @@ export default function GameCanvas() {
             return <div className={`resource-tile ${resource.tone}`} key={resource.key}><span>{resource.label}</span><strong>{Math.round(value)}<small>{resource.unit}</small></strong><i><b style={{ width: `${Math.min(100, value / capacity * 100)}%` }} /></i><em className={rate >= 0 ? "positive" : "negative"}>{rate >= 0 ? "+" : ""}{rate.toFixed(1)}/ciclo</em></div>;
           })}
         </section>
+
+        <section className="field-readout" aria-label="Estado de cartografía"><span>Cartografía activa</span><b>{BASE_SECTORS.find((sector) => sector.id === state.sector)?.name}</b><small>{activeExpedition ? `Rover en ruta · ${activeExpedition.secondsRemaining} ciclos` : `${freeNodes.length} nodos de montaje disponibles`}</small></section>
 
         <aside className="build-console" aria-label="Catálogo de construcción">
           <div className="panel-title"><span>01 / Construcción</span><b>{BASE_SECTORS.find((sector) => sector.id === state.sector)?.name}</b></div>

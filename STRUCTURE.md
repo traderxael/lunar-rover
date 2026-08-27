@@ -27,12 +27,13 @@ El juego evoluciona de un flujo de misión lineal a una simulación de base pers
 
 | Módulo nuevo o ampliado | Responsabilidad | Persistencia |
 |---|---|---|
-| `TycoonState` | Fuente de verdad para ciclo, sector, recursos, módulos, tripulación, investigación y expediciones. | Guardado versionado `lunar-science-base-tycoon-v1`. |
+| `TycoonState` | Fuente de verdad para ciclo, sector, recursos, módulos, tripulación, investigación, expediciones e historial propio. | Guardado v3 bajo `lunar-science-base-tycoon-v1`. |
 | `EconomyManager` | Produce/consume recursos por ciclo, calcula alertas y evita valores negativos. | Recursos, estado de red y alertas. |
 | `BuildingManager` | Valida nodos, coste, conexión energética, colocación, mejoras y reparación de módulos. | Instancias de construcción, nivel, integridad y nodo. |
 | `ResearchManager` | Controla las cuatro ramas tecnológicas, requisitos, efectos y las referencias históricas del codex. | Tecnologías desbloqueadas y datos científicos. |
 | `ExpeditionManager` | Coordina el rover manual/automático con los recursos entregados al asentamiento. | Estado, duración, resultados y carga de expedición. |
 | `CampaignManager` | Define tres programas de largo plazo, valida requisitos, actualiza hitos por ciclo o retorno y aplica recompensas únicas. | Campaña activa, hitos completados, métricas acumuladas y bonos permanentes. |
+| `DiscoveryManager` | Añade y filtra entradas de descubrimiento de forma inmutable, ordenada e idempotente. | Máximo de 80 eventos, con tipo, ciclo, marca temporal y recompensa opcional. |
 | `BaseWorld` | Propietario Babylon de las mallas de edificios, conectores, nodos y alertas del mapa. | Reconstruye mallas a partir de `TycoonState`, no almacena reglas. |
 | `DemoManager` | Crea un snapshot de exhibición válido y avanza ciclos/expediciones de forma determinista para `?demo`. | No escribe almacenamiento local. |
 | `TycoonHud` | Contrato de lectura para recursos, selección, construcción, investigación, alertas y bitácora. | No persiste: recibe snapshots del estado. |
@@ -45,7 +46,8 @@ El juego evoluciona de un flujo de misión lineal a una simulación de base pers
 4. **Progreso del rover:** las expediciones se consumen y resuelven mediante ciclos operativos, no por un intervalo de pared. **Verificación:** cada cierre reduce el contador de tres ciclos y la carga se acredita una sola vez al llegar a cero.
 5. **Modo de verificación:** `?demo` parte de un estado rico no persistente y alterna pasos deterministas. **Verificación:** una captura sin interacción muestra terreno, módulos, instrumentos, sectores desbloqueados y rover en ruta o carga recibida.
 6. **Campañas científicas:** las campañas actualizan métricas acumuladas después de economía y expedición; se guarda una línea base al iniciarlas. **Verificación:** ningún hito o efecto permanente se repite tras recargar, ejecutar ciclos consecutivos o pulsar una acción varias veces.
+7. **Historial de base:** cada evento relevante se registra desde su acción única y no desde el render de la interfaz. **Verificación:** los filtros, el detalle y las recompensas persisten tras recargar sin entradas duplicadas.
 
-El esquema de guardado de base evoluciona a la versión 2 dentro de la misma clave de almacenamiento. La migración desde v1 conserva el snapshot existente y añade campañas vacías, métricas a cero y bonos nulos; no vuelve a calcular ni elimina el bono de progresión rover heredado.
+El esquema de guardado de base evoluciona a la versión 3 dentro de la misma clave de almacenamiento. La migración conserva el snapshot existente: desde v1 añade campañas vacías y desde v2 consolida en la bitácora la infraestructura, investigación y recompensas ya obtenidas. No elimina ni vuelve a calcular el bono de progresión rover heredado.
 
 El sistema evita física compleja, navegación de multitudes, modelos GLB e IA opaca. Los edificios se representarán con primitivas de Babylon y texturas generadas para mantener rendimiento y control visual.

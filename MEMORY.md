@@ -25,3 +25,11 @@ El esquema de base usa ahora la versión 2 y conserva la misma clave de almacena
 `CampaignManager` concentra tres programas: Pioneros de superficie, Protocolo de cooperación y Ciclo de recursos lunares. Una única campaña puede estar activa. Economía y retorno de rover entregan un snapshot al gestor, que actualiza hitos y aplica cada recompensa de finalización una sola vez. Los bonos entran por `EconomyManager`, `ExpeditionManager` y capacidad del estado, no por condiciones de interfaz dispersas.
 
 El Archivo científico ofrece una vista de campañas con requisitos, progreso, efectos y sellos abstractos generados; el panel de operaciones muestra el hito activo. El modo `?demo` inicia el programa de Selenita y avanza hasta demostrar sus tres hitos y la mejora de agua, sin escribir almacenamiento local.
+
+## Historial visual de descubrimientos
+
+El guardado de la base evoluciona al esquema v3 dentro de la misma clave local. Las partidas v1 y v2 mantienen sus recursos, edificios, tecnologías, expediciones y campañas: si no existía historial, se consolida una primera bitácora de los avances ya logrados. Cada entrada incluye tipo, ciclo, marca temporal, detalle y, cuando aplica, la recompensa recibida; el registro se limita a 80 eventos.
+
+`DiscoveryManager` es el único responsable de añadir y ordenar eventos. `GameCanvas` registra instalaciones, reparaciones, investigaciones, retornos de rover, inicio/completado de campañas y primer acceso a sectores con identificadores estables para impedir duplicados. El Archivo científico incorpora una pestaña Bitácora con filtros por módulos, ciencia, rover, hitos, recompensas y sectores, más un panel de detalle seleccionable.
+
+La demostración parte de una historia previa de Selenita y añade sus retornos, hitos y recompensa de sostenibilidad conforme avanza. Esto permite verificar una línea de tiempo completa sin escribir datos de una campaña real.
