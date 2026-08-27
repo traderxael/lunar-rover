@@ -19,6 +19,15 @@
 - [x] Probar la progresión completa, incluidos reinicios y recargas de página.
 - [x] Guardar el checkpoint y sincronizar la actualización con GitHub.
 
+## Medallas de clasificación
+
+- [x] Revisar la estructura de entradas y la tabla de récords actual.
+- [x] Definir medallas por récord de sector y criterios de desempate.
+- [x] Calcular las medallas de forma determinista para la clasificación filtrada.
+- [x] Incorporar insignias visuales, leyenda y etiquetas accesibles en la tabla.
+- [x] Verificar medallas, filtros, estado vacío y navegación por teclado.
+- [ ] Guardar el checkpoint y sincronizar la actualización con GitHub.
+
 ## Objetivos secundarios opcionales
 
 - [x] Revisar las estructuras de mapas, progreso, misión e interfaz existentes.

@@ -3,7 +3,7 @@
  * tarjeta de telemetría, no como un tablero social externo.
  */
 import { useMemo, useState } from "react";
-import { getLeaderboard, type MapId } from "@/game/Progression";
+import { getLeaderboard, getSectorMedal, type MapId } from "@/game/Progression";
 
 type Filter = "all" | MapId;
 const filters: Array<{ id: Filter; label: string }> = [
@@ -42,13 +42,17 @@ export default function LeaderboardPanel() {
           {entries.length ? (
             <div className="board-table-wrap">
               <table className="board-table">
-                <thead><tr><th>#</th><th>Sector</th><th>Grado</th><th>Puntos</th><th>Tiempo</th><th>Aux.</th></tr></thead>
-                <tbody>{entries.map((entry, index) => <tr key={entry.id}><td>{index + 1}</td><td>{entry.mapName}</td><td><b className={`grade grade-${entry.grade.toLowerCase()}`}>{entry.grade}</b></td><td>{entry.score.toLocaleString("es-ES")}</td><td>{formatTime(entry.elapsed)}</td><td>{entry.optionalCollected}/{entry.optionalTotal}</td></tr>)}</tbody>
+                <thead><tr><th>#</th><th>Sello</th><th>Sector</th><th>Grado</th><th>Puntos</th><th>Tiempo</th><th>Aux.</th></tr></thead>
+                <tbody>{entries.map((entry, index) => {
+                  const medal = getSectorMedal(entry);
+                  return <tr key={entry.id}><td>{index + 1}</td><td>{medal ? <span className={`medal medal-${medal.tone}`} role="img" aria-label={medal.label} title={medal.label}>{medal.code}</span> : <span className="medal-placeholder" aria-label="Sin medalla">—</span>}</td><td>{entry.mapName}</td><td><b className={`grade grade-${entry.grade.toLowerCase()}`}>{entry.grade}</b></td><td>{entry.score.toLocaleString("es-ES")}</td><td>{formatTime(entry.elapsed)}</td><td>{entry.optionalCollected}/{entry.optionalTotal}</td></tr>;
+                })}</tbody>
               </table>
             </div>
           ) : (
             <div className="board-empty"><span>∿</span><strong>Sin expediciones registradas</strong><p>Completa una misión para dejar tu primer registro en la bitácora local.</p></div>
           )}
+          <div className="medal-legend" aria-label="Leyenda de medallas"><span><i className="medal medal-gold">I</i> Órbita I · récord de sector</span><span><i className="medal medal-silver">II</i> Órbita II</span><span><i className="medal medal-bronze">III</i> Órbita III</span></div>
           <p className="board-note">Los récords se guardan únicamente en este navegador.</p>
         </section>
       )}

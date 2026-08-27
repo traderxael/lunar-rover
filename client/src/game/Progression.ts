@@ -24,6 +24,13 @@ export type LeaderboardEntry = {
   createdAt: number;
 };
 
+export type SectorMedal = {
+  rank: 1 | 2 | 3;
+  code: "I" | "II" | "III";
+  label: string;
+  tone: "gold" | "silver" | "bronze";
+};
+
 export type CampaignProgress = { version: 3; records: Record<MapId, MapRecord>; leaderboard: LeaderboardEntry[] };
 export type CompletionReport = { grade: Grade; newUnlock: MapId | null; isNewBest: boolean; record: MapRecord; score: number; rank: number };
 
@@ -97,6 +104,17 @@ function sortLeaderboard(entries: LeaderboardEntry[]) {
 export function getLeaderboard(mapId?: MapId) {
   const entries = getProgress().leaderboard;
   return sortLeaderboard(mapId ? entries.filter((entry) => entry.mapId === mapId) : entries);
+}
+
+export function getSectorMedal(entry: LeaderboardEntry, source = getLeaderboard(entry.mapId)): SectorMedal | null {
+  const rank = source.findIndex((candidate) => candidate.id === entry.id) + 1;
+  if (rank < 1 || rank > 3) return null;
+  const medals: Record<number, SectorMedal> = {
+    1: { rank: 1, code: "I", label: "Récord de sector · Órbita I", tone: "gold" },
+    2: { rank: 2, code: "II", label: "Segundo récord de sector · Órbita II", tone: "silver" },
+    3: { rank: 3, code: "III", label: "Tercer récord de sector · Órbita III", tone: "bronze" },
+  };
+  return medals[rank];
 }
 
 export function recordMission(mapId: MapId, mapName: string, elapsed: number, energy: number, optionalCollected: number, optionalTotal: number): CompletionReport {

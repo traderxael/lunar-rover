@@ -63,3 +63,9 @@ Estos objetivos no condicionan el grado ni el desbloqueo de sectores. Cada uno s
 Cada finalización exitosa genera una entrada local con sector, grado, puntuación, tiempo, energía y desafío auxiliar. La puntuación se calcula como **(1.000 + energía restante × 10 + hitos auxiliares × 300 + bonificación de grado − segundos de misión × 3) × dificultad del sector**, limitada a cero. Las bonificaciones son S = 900, A = 600, B = 350 y C = 100; los multiplicadores de dificultad son 1,00 para Tranquillitatis, 1,25 para Tycho y 1,50 para Selenita.
 
 La tabla mantiene las 15 mejores expediciones locales y ordena por puntuación descendente, menor tiempo y mayor energía. Puede filtrarse por sector y no contiene datos simulados: antes de completar una expedición presentará un estado vacío claro.
+
+## Medallas de récord de sector
+
+La clasificación añade medallas calculadas a partir de los registros existentes, sin modificar ni inventar datos. Para cada sector, el primer, segundo y tercer mejor resultado reciben respectivamente **Insignia de Órbita I**, **Insignia de Órbita II** e **Insignia de Órbita III**. La prioridad sigue el mismo orden de la tabla: puntuación más alta, menor tiempo, mayor energía y, finalmente, registro más reciente.
+
+Las insignias se representan como sellos instrumentales de tres metales (ámbar mineral, cian plateado y cobre lunar) con números romanos y etiqueta accesible. En la vista general, cada entrada compite solo contra expediciones del mismo sector; al filtrar un sector, se mantienen las mismas medallas y su explicación visible.

@@ -68,3 +68,11 @@ kbd { padding: 2px 4px; color: #e5e9e6; border: 1px solid rgba(229,233,230,.22);
   .intro-content { width: min(580px, calc(100% - 34px)); }.intro-content h2 { font-size: clamp(47px, 14vw, 74px); }.intro-content > p:not(.eyebrow) { font-size: 12px; }.map-selector { margin-bottom: 14px; }.map-options { gap: 4px; }.map-option { min-height: 50px; padding: 6px; }.map-option strong { font-size: 14px; }.map-option small, .progress-key { font-size: 7px !important; }.mission-result h2 { font-size: 39px; }
 }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; } }
+
+/* Medallas de récord: sellos topográficos para los tres mejores tiempos de cada sector. */
+.board-table td:nth-child(2) { width: 37px; color: #8ba0a2; font-size: 13px; text-align: center; }
+.board-table td:nth-child(3) { color: #f2efe4; font-size: 16px; }
+.medal { display: inline-grid; width: 25px; height: 25px; place-items: center; border: 1px solid currentColor; clip-path: polygon(50% 0, 88% 22%, 88% 78%, 50% 100%, 12% 78%, 12% 22%); font-family: "Barlow Condensed", sans-serif; font-size: 10px; font-style: normal; font-weight: 700; line-height: 1; }
+.medal-gold { color: #f3a533; background: rgba(243,165,51,.14); }.medal-silver { color: #91d8db; background: rgba(84,204,208,.13); }.medal-bronze { color: #c88955; background: rgba(200,137,85,.13); }.medal-placeholder { display: inline-block; width: 25px; color: #607275; text-align: center; }
+.medal-legend { display: flex; flex-wrap: wrap; gap: 7px 13px; margin-top: 13px; padding-top: 11px; border-top: 1px solid rgba(84,204,208,.16); color: #8aa0a2; font-size: 8px; letter-spacing: .035em; text-transform: uppercase; }.medal-legend span { display: inline-flex; align-items: center; gap: 5px; }.medal-legend .medal { width: 17px; height: 17px; font-size: 7px; }
+@media (max-width: 720px) { .board-table td:nth-child(2) { width: 28px; max-width: none; font-size: 10px; }.board-table td:nth-child(3) { max-width: 76px; font-size: 13px; line-height: .95; }.medal { width: 20px; height: 20px; font-size: 8px; }.medal-legend { gap: 5px 7px; font-size: 7px; } }
