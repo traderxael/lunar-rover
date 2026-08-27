@@ -11,14 +11,16 @@ import { Hud, type MissionState } from "./Hud";
 import { Rover } from "./Rover";
 import { DustStorm } from "./DustStorm";
 import type { MissionMap } from "./MissionMap";
-import { recordMission, type CompletionReport } from "./Progression";
+import { recordMission, recordOptionalProgress, type CompletionReport } from "./Progression";
 import { deepCraterAt, terrainHeight } from "./terrain";
 
 type Sample = { root: TransformNode; position: Vector3; collected: boolean; bobOffset: number };
+type SecondaryMarker = { root: TransformNode; position: Vector3; collected: boolean; bobOffset: number };
 
 export class GameWorld {
   private readonly rover: Rover;
   private readonly samples: Sample[] = [];
+  private readonly secondaryMarkers: SecondaryMarker[] = [];
   private readonly targetRing: Mesh;
   private readonly targetLight: PointLight;
   private readonly dustStorm: DustStorm;
@@ -26,11 +28,13 @@ export class GameWorld {
   private energy = 100;
   private elapsed = 0;
   private collected = 0;
+  private optionalCollected = 0;
   private state: MissionState;
   private readonly isDemo: boolean;
   private followTarget: Vector3;
   private boostFlash = false;
   private completion: CompletionReport | null = null;
+  private optionalNewBest = false;
 
   constructor(private readonly scene: Scene, private readonly input: InputManager, private readonly hud: Hud, private readonly map: MissionMap) {
     this.isDemo = new URLSearchParams(window.location.search).has("demo");
@@ -38,6 +42,7 @@ export class GameWorld {
     this.rover = new Rover(scene, (x, z) => terrainHeight(this.map, x, z), map.start);
     this.followTarget = this.rover.position.clone();
     this.createSamples();
+    this.createSecondaryMarkers();
     this.createDecorations();
     this.createCraterHazards();
     this.dustStorm = new DustStorm(scene, map.storm);
@@ -73,12 +78,18 @@ export class GameWorld {
     this.energy = 100;
     this.elapsed = 0;
     this.collected = 0;
+    this.optionalCollected = 0;
+    this.optionalNewBest = false;
     this.completion = null;
     this.state = "active";
     this.rover.reset();
     this.samples.forEach((sample) => {
       sample.collected = false;
       sample.root.setEnabled(true);
+    });
+    this.secondaryMarkers.forEach((marker) => {
+      marker.collected = false;
+      marker.root.setEnabled(true);
     });
     this.updateObjectiveMarker();
     this.refreshHud();
@@ -101,6 +112,7 @@ export class GameWorld {
       const craterDrain = craterHazard ? 3.1 * delta : 0;
       this.energy = Math.max(0, this.energy - step.usedEnergy - motionDrain - craterDrain);
       this.checkSamples();
+      this.checkSecondaryObjective();
       if (this.energy <= 0) this.state = "depleted";
     }
 
@@ -113,6 +125,13 @@ export class GameWorld {
       }
     });
 
+    this.secondaryMarkers.forEach((marker) => {
+      if (!marker.collected) {
+        marker.root.rotation.y -= delta * 0.52;
+        marker.root.position.y = terrainHeight(this.map, marker.position.x, marker.position.z) + 0.8 + Math.sin(this.elapsed * 1.7 + marker.bobOffset) * 0.1;
+      }
+    });
+
     const target = this.rover.position.clone();
     this.followTarget = Vector3.Lerp(this.followTarget, target, Math.min(delta * 7.5, 1));
     this.targetRing.rotation.z += delta * 0.32;
@@ -122,6 +141,7 @@ export class GameWorld {
   dispose() {
     this.rover.dispose();
     this.samples.forEach((sample) => sample.root.dispose());
+    this.secondaryMarkers.forEach((marker) => marker.root.dispose());
     this.hazardRings.forEach((ring) => ring.dispose());
     this.dustStorm.dispose();
     this.targetRing.dispose();
@@ -146,6 +166,15 @@ export class GameWorld {
     }
   }
 
+  private checkSecondaryObjective() {
+    const marker = this.secondaryMarkers.find((candidate) => !candidate.collected);
+    if (!marker || Vector3.Distance(this.rover.position, marker.root.position) >= 2.9) return;
+    marker.collected = true;
+    marker.root.setEnabled(false);
+    this.optionalCollected += 1;
+    this.optionalNewBest = recordOptionalProgress(this.map.id, this.optionalCollected) || this.optionalNewBest;
+  }
+
   private refreshHud(hazard = false) {
     const target = this.samples[this.collected];
     const targetDistance = target && !target.collected ? Vector3.Distance(this.rover.position, target.root.position) : 0;
@@ -162,6 +191,9 @@ export class GameWorld {
       mapIndex: this.map.index,
       stormLabel: this.map.storm.active ? `Polvo · ${this.map.storm.strength}` : "Visibilidad · plena",
       hazard,
+      optionalCollected: this.optionalCollected,
+      optionalTotal: this.secondaryMarkers.length,
+      secondaryTitle: this.map.secondary.title,
       grade: this.completion?.grade,
       completionNote: this.getCompletionNote(),
     });
@@ -226,12 +258,40 @@ export class GameWorld {
     });
   }
 
+  private createSecondaryMarkers() {
+    const markerMaterial = new StandardMaterial("secondary-marker-material", this.scene);
+    markerMaterial.diffuseColor = Color3.FromHexString("#D8B178");
+    markerMaterial.emissiveColor = Color3.FromHexString("#7E5528");
+    const bandMaterial = new StandardMaterial("secondary-marker-band", this.scene);
+    bandMaterial.diffuseColor = Color3.FromHexString("#54CCD0");
+    bandMaterial.emissiveColor = Color3.FromHexString("#286B73");
+    this.map.secondary.positions.forEach((position, index) => {
+      const anchored = position.clone();
+      anchored.y = terrainHeight(this.map, anchored.x, anchored.z);
+      const root = new TransformNode(`secondary-marker-${index}`, this.scene);
+      root.position = anchored.add(new Vector3(0, 0.78, 0));
+      const post = MeshBuilder.CreateCylinder(`secondary-post-${index}`, { height: 1.26, diameter: 0.26, tessellation: 6 }, this.scene);
+      post.parent = root;
+      post.material = markerMaterial;
+      const band = MeshBuilder.CreateTorus(`secondary-band-${index}`, { diameter: 0.62, thickness: 0.065, tessellation: 20 }, this.scene);
+      band.parent = root;
+      band.rotation.x = Math.PI / 2;
+      band.position.y = 0.52;
+      band.material = bandMaterial;
+      this.secondaryMarkers.push({ root, position: anchored, collected: false, bobOffset: index * 0.93 + 0.27 });
+    });
+  }
+
   private getCompletionNote() {
     if (!this.completion) return undefined;
     const labels = { tycho: "Fosa de Tycho", selenite: "Cuenca de Selenita", tranquility: "Mare Tranquillitatis" };
-    if (this.completion.newUnlock) return `Nuevo sector desbloqueado: ${labels[this.completion.newUnlock]}.`;
-    if (this.completion.grade === "C") return "El grado C registra la misión; para desbloquear el próximo sector consigue grado B.";
-    return this.completion.isNewBest ? "Nuevo mejor desempeño registrado en la bitácora." : "El mejor desempeño previo se conserva en la bitácora.";
+    const notes: string[] = [];
+    if (this.completion.newUnlock) notes.push(`Nuevo sector desbloqueado: ${labels[this.completion.newUnlock]}.`);
+    if (this.optionalCollected === this.secondaryMarkers.length) notes.push(`Desafío secundario completado: ${this.map.secondary.reward}.`);
+    if (!notes.length && this.optionalNewBest) notes.push(`Nuevo avance opcional registrado: ${this.optionalCollected}/${this.secondaryMarkers.length}.`);
+    if (!notes.length && this.completion.grade === "C") notes.push("El grado C registra la misión; para desbloquear el próximo sector consigue grado B.");
+    if (!notes.length) notes.push(this.completion.isNewBest ? "Nuevo mejor desempeño registrado en la bitácora." : "El mejor desempeño previo se conserva en la bitácora.");
+    return notes.join(" ");
   }
 
   private createDecorations() {

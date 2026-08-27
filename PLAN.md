@@ -47,3 +47,13 @@ La selección de mapa estará disponible antes de iniciar la misión. Cada mapa 
 | **Cuenca de Selenita** | Bloqueado. | Obtener **grado B o superior** en Fosa de Tycho. | La misma escala premia ruta eficiente y energía, con el riesgo adicional de los cráteres. |
 
 El progreso se guarda en el navegador. Al completar una misión se conservará el mejor grado, la mayor energía de llegada y el mejor tiempo, de modo que una recarga no elimina los sectores ya desbloqueados. La interfaz debe describir con precisión qué falta para habilitar cada sector y anunciar inmediatamente un nuevo desbloqueo.
+
+## Desafíos secundarios de exploración
+
+| Mapa | Desafío opcional | Acción | Reconocimiento |
+|---|---|---|---|
+| **Mare Tranquillitatis** | **Balizas de calibración** | Registrar tres balizas de trayectoria alejadas de la ruta principal. | *Cartógrafo de superficie*. |
+| **Fosa de Tycho** | **Lectura de bordes** | Inspeccionar tres estaciones junto a los perímetros de cráter profundo sin cruzar sus zonas de riesgo. | *Topógrafo de Tycho*. |
+| **Cuenca de Selenita** | **Muestreo eólico** | Recuperar tres sondas anemométricas mientras la tormenta de polvo está activa. | *Analista de selenita*. |
+
+Estos objetivos no condicionan el grado ni el desbloqueo de sectores. Cada uno se puede recoger en cualquier orden y queda registrado de forma local como el mejor avance del sector, con un reconocimiento en el informe final para estimular rutas alternativas.

@@ -1,6 +1,5 @@
 /**
- * Progression rules for the expedition. Scores are intentionally local: the game
- * is static and never sends player performance outside the browser.
+ * Progression rules are stored only in the current browser, never transmitted.
  */
 export type MapId = "tranquility" | "tycho" | "selenite";
 export type Grade = "S" | "A" | "B" | "C";
@@ -11,30 +10,40 @@ export type MapRecord = {
   grade: Grade | null;
   bestEnergy: number;
   bestTime: number | null;
+  bestOptional: number;
 };
 
-export type CampaignProgress = { version: 1; records: Record<MapId, MapRecord> };
+export type CampaignProgress = { version: 2; records: Record<MapId, MapRecord> };
 export type CompletionReport = { grade: Grade; newUnlock: MapId | null; isNewBest: boolean; record: MapRecord };
 
 const STORAGE_KEY = "lunar-rover-expedition-progress-v1";
 export const MAP_ORDER: MapId[] = ["tranquility", "tycho", "selenite"];
-
 const gradeRank: Record<Grade, number> = { C: 1, B: 2, A: 3, S: 4 };
 
 function blankRecord(): MapRecord {
-  return { completed: false, attempts: 0, grade: null, bestEnergy: 0, bestTime: null };
+  return { completed: false, attempts: 0, grade: null, bestEnergy: 0, bestTime: null, bestOptional: 0 };
 }
 
 export function createProgress(): CampaignProgress {
-  return { version: 1, records: { tranquility: blankRecord(), tycho: blankRecord(), selenite: blankRecord() } };
+  return { version: 2, records: { tranquility: blankRecord(), tycho: blankRecord(), selenite: blankRecord() } };
 }
 
 export function getProgress(): CampaignProgress {
   try {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     if (!saved) return createProgress();
-    const parsed = JSON.parse(saved) as CampaignProgress;
-    if (parsed.version !== 1 || !parsed.records?.tranquility || !parsed.records?.tycho || !parsed.records?.selenite) return createProgress();
+    const parsed = JSON.parse(saved) as CampaignProgress | { version: 1; records?: Record<MapId, Omit<MapRecord, "bestOptional">> };
+    if (!parsed.records?.tranquility || !parsed.records?.tycho || !parsed.records?.selenite) return createProgress();
+    if (parsed.version === 1) {
+      const migrated: CampaignProgress = { version: 2, records: {
+        tranquility: { ...parsed.records.tranquility, bestOptional: 0 },
+        tycho: { ...parsed.records.tycho, bestOptional: 0 },
+        selenite: { ...parsed.records.selenite, bestOptional: 0 },
+      } };
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+    if (parsed.version !== 2) return createProgress();
     return parsed;
   } catch {
     return createProgress();
@@ -57,24 +66,32 @@ export function gradeMission(elapsed: number, energy: number): Grade {
 
 export function recordMission(mapId: MapId, elapsed: number, energy: number): CompletionReport {
   const progress = getProgress();
-  const before = isMapUnlocked(MAP_ORDER[Math.min(MAP_ORDER.indexOf(mapId) + 1, MAP_ORDER.length - 1)], progress);
+  const currentIndex = MAP_ORDER.indexOf(mapId);
+  const nextMap = MAP_ORDER[currentIndex + 1] ?? null;
+  const wasNextUnlocked = nextMap ? isMapUnlocked(nextMap, progress) : true;
   const grade = gradeMission(elapsed, energy);
   const existing = progress.records[mapId];
   const isNewBest = !existing.grade || gradeRank[grade] > gradeRank[existing.grade] || (grade === existing.grade && (existing.bestTime === null || elapsed < existing.bestTime));
-  const next: MapRecord = {
+  const record: MapRecord = {
+    ...existing,
     completed: true,
     attempts: existing.attempts + 1,
     grade: !existing.grade || gradeRank[grade] >= gradeRank[existing.grade] ? grade : existing.grade,
     bestEnergy: Math.max(existing.bestEnergy, Math.round(energy)),
     bestTime: existing.bestTime === null ? elapsed : Math.min(existing.bestTime, elapsed),
   };
-  progress.records[mapId] = next;
+  progress.records[mapId] = record;
   try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* local progress is optional */ }
+  return { grade, newUnlock: nextMap && !wasNextUnlocked && isMapUnlocked(nextMap, progress) ? nextMap : null, isNewBest, record };
+}
 
-  const currentIndex = MAP_ORDER.indexOf(mapId);
-  const nextMap = MAP_ORDER[currentIndex + 1] ?? null;
-  const newUnlock = nextMap && !before && isMapUnlocked(nextMap, progress) ? nextMap : null;
-  return { grade, newUnlock, isNewBest, record: next };
+export function recordOptionalProgress(mapId: MapId, completed: number) {
+  const progress = getProgress();
+  const record = progress.records[mapId];
+  const isNewBest = completed > record.bestOptional;
+  progress.records[mapId] = { ...record, bestOptional: Math.max(record.bestOptional, completed) };
+  try { window.localStorage.setItem(STORAGE_KEY, JSON.stringify(progress)); } catch { /* local progress is optional */ }
+  return isNewBest;
 }
 
 export function requirementLabel(mapId: MapId, progress = getProgress()) {

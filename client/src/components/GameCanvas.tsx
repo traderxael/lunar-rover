@@ -84,6 +84,7 @@ export default function GameCanvas() {
             <div><dt>Sector</dt><dd id="map-title">{activeMap.index} · {activeMap.name}</dd></div>
           </dl>
           <div className="terrain-code"><span>Estado de ruta</span><b id="storm-value">Visibilidad · plena</b></div>
+          <div className="optional-readout"><span>Desafío auxiliar</span><strong id="optional-value">0/{activeMap.secondary.positions.length}</strong><small id="optional-name">{activeMap.secondary.title}</small></div>
         </aside>
 
         <section className="mission-brief" aria-label="Objetivo de la misión">
@@ -99,12 +100,13 @@ export default function GameCanvas() {
             <p className="eyebrow">Bitácora de exploración · {activeMap.name}</p>
             <h2>La ruta está marcada.<br /><em>Haz que cuente.</em></h2>
             <p>{activeMap.briefing}</p>
+            <div className="secondary-brief"><span>Desafío auxiliar · {activeMap.secondary.title}</span><b>{activeMap.secondary.directive}</b></div>
             <div className="map-selector" aria-label="Seleccionar mapa de exploración">
               <p>Selecciona una zona de aterrizaje</p>
               <div className="map-options">
                 {MISSION_MAPS.map((map) => (
                   <button key={map.id} type="button" disabled={!isMapUnlocked(map.id, progress)} onClick={() => chooseMap(map.id)} className={`map-option ${map.id === activeMap.id ? "is-active" : ""} ${!isMapUnlocked(map.id, progress) ? "is-locked" : ""}`}>
-                    <span>{map.index}</span><strong>{map.name}</strong><small>{isMapUnlocked(map.id, progress) ? (progress.records[map.id].grade ? `Mejor grado ${progress.records[map.id].grade} · ${map.subtitle}` : map.subtitle) : `⌁ ${requirementLabel(map.id, progress)}`}</small>
+                    <span>{map.index}</span><strong>{map.name}</strong><small>{isMapUnlocked(map.id, progress) ? `${progress.records[map.id].grade ? `Mejor grado ${progress.records[map.id].grade} · ` : ""}${map.subtitle}${progress.records[map.id].bestOptional ? ` · Aux. ${progress.records[map.id].bestOptional}/${map.secondary.positions.length}` : ""}` : `⌁ ${requirementLabel(map.id, progress)}`}</small>
                   </button>
                 ))}
               </div>

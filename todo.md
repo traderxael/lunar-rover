@@ -17,4 +17,14 @@
 - [x] Bloquear y señalizar sectores no disponibles en el selector de mapas.
 - [x] Mostrar el desbloqueo y el desempeño en el informe final de cada misión.
 - [x] Probar la progresión completa, incluidos reinicios y recargas de página.
-- [ ] Guardar el checkpoint y sincronizar la actualización con GitHub.
+- [x] Guardar el checkpoint y sincronizar la actualización con GitHub.
+
+## Objetivos secundarios opcionales
+
+- [x] Revisar las estructuras de mapas, progreso, misión e interfaz existentes.
+- [x] Definir un desafío opcional distintivo y medible para cada mapa.
+- [x] Implementar hitos opcionales y marcadores propios en la escena.
+- [x] Guardar el estado de los desafíos secundarios en el progreso local.
+- [x] Mostrar avance opcional en la telemetría y reconocimiento en el informe final.
+- [x] Validar las rutas principales y opcionales de los tres mapas.
+- [ ] Guardar el checkpoint y sincronizar la ampliación con GitHub.

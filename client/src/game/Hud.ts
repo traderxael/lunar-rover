@@ -14,6 +14,9 @@ export type HudSnapshot = {
   mapIndex: string;
   stormLabel: string;
   hazard: boolean;
+  optionalCollected: number;
+  optionalTotal: number;
+  secondaryTitle: string;
   grade?: string;
   completionNote?: string;
 };
@@ -48,6 +51,8 @@ export class Hud {
     this.setText("mission-time", this.clock(snapshot.elapsed));
     this.setText("map-title", `${snapshot.mapIndex} · ${snapshot.mapName}`);
     this.setText("storm-value", snapshot.stormLabel);
+    this.setText("optional-value", `${snapshot.optionalCollected}/${snapshot.optionalTotal}`);
+    this.setText("optional-name", snapshot.secondaryTitle);
 
     const energyBar = document.getElementById("energy-bar");
     if (energyBar) {
@@ -62,7 +67,9 @@ export class Hud {
         : snapshot.boosted
         ? "Impulso activado — controla la inercia"
         : snapshot.state === "active"
-          ? `Muestra ${Math.min(snapshot.collected + 1, snapshot.total)} localizada: vigila el estado de ruta`
+          ? snapshot.optionalCollected < snapshot.optionalTotal
+            ? `Muestra ${Math.min(snapshot.collected + 1, snapshot.total)} localizada · desafío: ${snapshot.secondaryTitle}`
+            : `Muestra ${Math.min(snapshot.collected + 1, snapshot.total)} localizada · desafío secundario completo`
           : "Esperando la siguiente instrucción";
     }
 
