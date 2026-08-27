@@ -48,6 +48,20 @@ La selección de mapa estará disponible antes de iniciar la misión. Cada mapa 
 
 El progreso se guarda en el navegador. Al completar una misión se conservará el mejor grado, la mayor energía de llegada y el mejor tiempo, de modo que una recarga no elimina los sectores ya desbloqueados. La interfaz debe describir con precisión qué falta para habilitar cada sector y anunciar inmediatamente un nuevo desbloqueo.
 
+## Tycoon de Base Científica Lunar — vertical slice
+
+La expansión cambia el bucle central a construir, abastecer, investigar y explorar. El alcance inicial incluye cinco módulos (plataforma solar, hábitat, laboratorio, extractora y antena), cuatro recursos (energía, oxígeno, agua, regolito), una expedición de rover y cuatro nodos tecnológicos. Los mapas existentes pasan a ser sectores de asentamiento con requisitos de infraestructura y resistencia ambiental.
+
+### Riesgos y prueba
+
+| Riesgo | Enfoque | Verificación |
+|---|---|---|
+| Simulación y persistencia | Estado serializable versionado con migración no destructiva de progresión actual. | Recarga conserva base, récords y medallas sin estados inválidos. |
+| Colocación y economía | Nodos finitos, producción por ciclo y consumo explícito por edificio. | La colocación valida coste y nodo; energía visible cambia según la red. |
+| Integración rover–base | La expedición entrega materiales y datos al estado de base. | Una expedición completada desbloquea o financia al menos una investigación. |
+
+**Activos asignados:** referencia visual del tycoon, hábitat, laboratorio, extractora y campo solar documentados en `ASSETS.md`. Los módulos físicos se construirán con geometría procedural y las imágenes aparecerán en las tarjetas de catálogo y bitácora.
+
 ## Desafíos secundarios de exploración
 
 | Mapa | Desafío opcional | Acción | Reconocimiento |

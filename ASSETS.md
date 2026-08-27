@@ -14,3 +14,15 @@
 ## Notas de implementación
 
 Los recursos se generan fuera del árbol del proyecto y se consumen desde almacenamiento gestionado. La mayor parte de la escena se resuelve mediante geometría procedural para conservar una carga rápida y una silueta de juego limpia. La imagen de referencia se usa como guía principal de control de calidad y se mostrará en la superficie de presentación inicial de la misión.
+
+## Expansión — Lunar Science Base Tycoon
+
+**Dirección artística de la base:** Bitácora científica lunar de perspectiva isométrica. La base es un conjunto asimétrico de módulos presurizados, paneles solares y laboratorios sobre regolito mineral. El vacío azul-negro conserva el silencio de la misión; el ámbar selenita identifica construcción, energía y rutas, mientras el cian representa soporte vital, ciencia y comunicaciones. Las estructuras deben leerse como hardware plausible de aluminio cepillado, no como arquitectura futurista genérica.
+
+| Recurso | Función | Tamaño de uso | Origen y ruta de uso |
+|---|---|---|---|
+| Referencia visual del tycoon | Fija la composición isométrica, la jerarquía de paneles y la densidad de módulos en la base. | 1,920 × 1,080 px; portada y control de calidad | `/manus-storage/lunar-scientific-base-tycoon-visual-target_d1e54007.png` |
+| Módulo de hábitat | Ilustración para tarjeta de construcción y placa de información del hábitat presurizado. | 320 × 210 px; módulo físico de 8 × 5 m construido con geometría procedural | `/manus-storage/lunar-habitat-module_15f2dc65.png` |
+| Módulo de laboratorio | Ilustración para tarjeta de investigación y módulo geológico de la base. | 320 × 210 px; módulo físico de 7 × 4 m | `/manus-storage/lunar-science-laboratory-module_f7492492.png` |
+| Extractora de regolito | Ilustración de catálogo y placa de la extractora, con perforación ámbar. | 320 × 210 px; módulo físico de 5 × 4 m | `/manus-storage/lunar-regolith-extractor-module_37cb8532.png` |
+| Campo solar | Ilustración de catálogo para el módulo generador inicial. | 320 × 210 px; módulo físico de 9 × 5 m | `/manus-storage/lunar-solar-array-module_7a5777b1.png` |

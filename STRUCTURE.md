@@ -20,3 +20,28 @@ En cada fotograma, la escena consulta `InputManager`, `Rover` integra posición 
 ## Sugerencias de recursos
 
 El terreno será una malla procedural de 140 × 140 m con repetición UV de la textura de regolito cada 24 m. El rover se construirá con primitivas compuestas para mantener claridad y rendimiento; la calcomanía técnica se coloca en sus paneles. Las muestras y la baliza se distinguen con materiales emisivos programáticos ámbar/cian, que siguen la misma guía visual sin exigir modelos externos.
+
+## Arquitectura de expansión — Lunar Science Base Tycoon
+
+El juego evoluciona de un flujo de misión lineal a una simulación de base persistente. La interfaz de React será el marco de control (recursos, construcción, investigación, bitácora e historial); Babylon continuará siendo el lienzo de la base y del rover. Las reglas siguen siendo clases TypeScript sin React, comunicadas por snapshots serializables.
+
+| Módulo nuevo o ampliado | Responsabilidad | Persistencia |
+|---|---|---|
+| `TycoonState` | Fuente de verdad para ciclo, sector, recursos, módulos, tripulación, investigación y expediciones. | Guardado versionado `lunar-science-base-tycoon-v1`. |
+| `EconomyManager` | Produce/consume recursos por ciclo, calcula alertas y evita valores negativos. | Recursos, estado de red y alertas. |
+| `BuildingManager` | Valida nodos, coste, conexión energética, colocación, mejoras y reparación de módulos. | Instancias de construcción, nivel, integridad y nodo. |
+| `ResearchManager` | Controla las cuatro ramas tecnológicas, requisitos, efectos y las referencias históricas del codex. | Tecnologías desbloqueadas y datos científicos. |
+| `ExpeditionManager` | Coordina el rover manual/automático con los recursos entregados al asentamiento. | Estado, duración, resultados y carga de expedición. |
+| `BaseWorld` | Propietario Babylon de las mallas de edificios, conectores, nodos y alertas del mapa. | Reconstruye mallas a partir de `TycoonState`, no almacena reglas. |
+| `DemoManager` | Crea un snapshot de exhibición válido y avanza ciclos/expediciones de forma determinista para `?demo`. | No escribe almacenamiento local. |
+| `TycoonHud` | Contrato de lectura para recursos, selección, construcción, investigación, alertas y bitácora. | No persiste: recibe snapshots del estado. |
+
+### Riesgos aislados y verificación
+
+1. **Migración de partidas:** los récords, medallas y desbloqueos actuales no se eliminan. El primer arranque crea el guardado de base por separado y migra los logros disponibles como bonificaciones de datos. **Verificación:** un progreso previo sigue disponible tras recargar y no aparecen valores `NaN` o estructuras corruptas.
+2. **Colocación por nodos y red de energía:** cada módulo se debe colocar sólo en nodos libres y la energía debe actualizarse sin crear un bucle de recursos negativo. **Verificación:** construir solar antes de laboratorio habilita el laboratorio; desactivar la red muestra alerta y limita la producción sin bloquear la partida.
+3. **Sincronía escena–interfaz:** Babylon y los paneles de React deben reflejar la misma base persistente. **Verificación:** colocar, mejorar o reparar un módulo cambia el inventario, su malla y la barra de recursos en un ciclo de simulación.
+4. **Progreso del rover:** las expediciones se consumen y resuelven mediante ciclos operativos, no por un intervalo de pared. **Verificación:** cada cierre reduce el contador de tres ciclos y la carga se acredita una sola vez al llegar a cero.
+5. **Modo de verificación:** `?demo` parte de un estado rico no persistente y alterna pasos deterministas. **Verificación:** una captura sin interacción muestra terreno, módulos, instrumentos, sectores desbloqueados y rover en ruta o carga recibida.
+
+El sistema evita física compleja, navegación de multitudes, modelos GLB e IA opaca. Los edificios se representarán con primitivas de Babylon y texturas generadas para mantener rendimiento y control visual.

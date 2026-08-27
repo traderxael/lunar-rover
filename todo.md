@@ -47,3 +47,15 @@
 - [x] Mostrar la puntuación lograda dentro del informe final de misión.
 - [x] Validar ordenamiento, persistencia y estado vacío de la clasificación.
 - [ ] Guardar el checkpoint y sincronizar la actualización con GitHub.
+
+## Tycoon de base científica lunar
+
+- [x] Preparar el visual target, la arquitectura y el manifiesto de recursos de la base científica.
+- [x] Diseñar el modelo de estado para recursos, edificios, tripulación, investigación y expediciones.
+- [x] Implementar ciclos económicos, guardado versionado y migración desde los récords actuales.
+- [x] Construir módulos de base, nodos edificables y conexión de energía en la escena.
+- [x] Crear los paneles de investigación y bitácora histórica con referencias de programas espaciales.
+- [x] Integrar una expedición de rover que entregue recursos y datos científicos a la base.
+- [x] Adaptar Tranquillitatis, Tycho y Selenita a sectores de asentamiento progresivo.
+- [x] Probar guardados, alertas, construcción, exploración, controles y modo demostración.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar la expansión tycoon.

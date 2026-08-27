@@ -1,136 +1,169 @@
 /**
- * Dirección visual: Bitácora de Exploración Analógica — instrumentación periférica,
- * alto contraste mineral y ámbar selenita como señal de misión.
+ * Dirección visual: bitácora de base científica lunar; interfaz asimétrica con
+ * reglito mineral, control de recursos y ámbar/cian de función operacional.
  */
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Engine } from "@babylonjs/core/Engines/engine";
 import { createGameScene, type GameHandle } from "@/game/scene";
 import { ASSET_URLS } from "@/game/assets";
-import { getMissionMap, MISSION_MAPS } from "@/game/MissionMap";
-import { getProgress, isMapUnlocked, requirementLabel } from "@/game/Progression";
-import LeaderboardPanel from "@/components/LeaderboardPanel";
+import { BUILD_NODES } from "@/game/BaseWorld";
+import { BUILDINGS, constructBuilding, repairBuilding, type BuildingDefinition } from "@/game/BuildingManager";
+import { advanceEconomy, resourceRate } from "@/game/EconomyManager";
+import { loadTycoonState, saveTycoonState, type BuildingKind, type ResourceKey, type TycoonState } from "@/game/TycoonState";
+import { advanceExpeditions, expeditionRewardLabel, startExpedition } from "@/game/ExpeditionManager";
+import { completeResearch } from "@/game/ResearchManager";
+import ScienceArchive from "@/components/ScienceArchive";
+import { BASE_SECTORS, changeSector, canAccessSector } from "@/game/SectorManager";
+import { advanceDemoStep, createDemoTycoonState } from "@/game/DemoManager";
+
+const RESOURCE_META: Array<{ key: ResourceKey; label: string; unit: string; tone: "amber" | "cyan" }> = [
+  { key: "energy", label: "Energía", unit: "kWh", tone: "amber" },
+  { key: "oxygen", label: "Oxígeno", unit: "%", tone: "cyan" },
+  { key: "water", label: "Agua", unit: "L", tone: "cyan" },
+  { key: "regolith", label: "Regolito", unit: "kg", tone: "amber" },
+  { key: "data", label: "Datos", unit: "u", tone: "cyan" },
+];
+
+function formatCost(definition: BuildingDefinition) {
+  return Object.entries(definition.cost).map(([resource, value]) => `${value} ${resource === "regolith" ? "reg." : resource === "energy" ? "ene." : resource}`).join(" · ");
+}
 
 export default function GameCanvas() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const handleRef = useRef<GameHandle | null>(null);
   const startedRef = useRef(false);
-  const activeMap = getMissionMap();
-  const progress = getProgress();
+  const stateRef = useRef<TycoonState | null>(null);
+  const demoModeRef = useRef(new URLSearchParams(window.location.search).has("demo"));
+  const isDemo = demoModeRef.current;
+  const [state, setState] = useState<TycoonState>(() => isDemo ? createDemoTycoonState() : loadTycoonState());
+  const [selectedNode, setSelectedNode] = useState("n-03");
+  const [selectedBuilding, setSelectedBuilding] = useState<BuildingKind>("laboratory");
+  const [notice, setNotice] = useState("Bitácora inicial cargada. La base está en estado operativo.");
+  const [scienceOpen, setScienceOpen] = useState(false);
 
-  const chooseMap = (mapId: string) => {
-    if (!isMapUnlocked(mapId as "tranquility" | "tycho" | "selenite", progress)) return;
-    const query = new URLSearchParams(window.location.search);
-    query.set("map", mapId);
-    query.delete("demo");
-    window.location.search = query.toString();
-  };
+  stateRef.current = state;
+  const freeNodes = useMemo(() => BUILD_NODES.filter((node) => !state.buildings.some((building) => building.nodeId === node.id)), [state.buildings]);
+  const rates = useMemo(() => resourceRate(state), [state]);
+
+  const commit = useCallback((next: TycoonState, message: string) => {
+    const saved = isDemo ? { ...next, lastSavedAt: Date.now() } : saveTycoonState(next);
+    stateRef.current = saved;
+    setState(saved);
+    setNotice(message);
+  }, [isDemo]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas || startedRef.current) return;
     startedRef.current = true;
-    const engine = new Engine(canvas, true, {
-      preserveDrawingBuffer: true,
-      stencil: true,
-      adaptToDeviceRatio: true,
-    });
-
-    let handle: GameHandle | null = null;
+    const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, adaptToDeviceRatio: true });
     let disposed = false;
-    createGameScene(engine, canvas).then((game) => {
-      if (disposed) {
-        game.dispose();
-        return;
-      }
-      handle = game;
+    createGameScene(engine, canvas, stateRef.current ?? loadTycoonState()).then((game) => {
+      if (disposed) { game.dispose(); return; }
+      handleRef.current = game;
+      game.syncTycoonState(stateRef.current ?? loadTycoonState());
       engine.runRenderLoop(() => game.scene.render());
     });
-
     const onResize = () => engine.resize();
     window.addEventListener("resize", onResize);
-    return () => {
-      disposed = true;
-      window.removeEventListener("resize", onResize);
-      handle?.dispose();
-      engine.dispose();
-      startedRef.current = false;
-    };
+    return () => { disposed = true; window.removeEventListener("resize", onResize); handleRef.current?.dispose(); handleRef.current = null; engine.dispose(); startedRef.current = false; };
   }, []);
 
+  useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
+
+  useEffect(() => {
+    if (!isDemo) return;
+    const timer = window.setInterval(() => {
+      const next = advanceDemoStep(stateRef.current ?? createDemoTycoonState());
+      stateRef.current = next;
+      setState(next);
+      setNotice(next.expeditions[0].state === "active" ? "Demostración: el rover y la red avanzan de forma autónoma." : "Demostración: la carga científica fue recibida en la base.");
+    }, 1800);
+    return () => window.clearInterval(timer);
+  }, [isDemo]);
+
+  const activeExpedition = state.expeditions.find((expedition) => expedition.state === "active");
+
+  const build = (kind: BuildingKind) => {
+    const nodeId = freeNodes.some((node) => node.id === selectedNode) ? selectedNode : freeNodes[0]?.id;
+    if (!nodeId) { setNotice("Todos los nodos disponibles están ocupados. Amplía la base en otro sector."); return; }
+    const result = constructBuilding(state, kind, nodeId);
+    if (!result.ok) { setNotice(result.reason); return; }
+    const nextFree = BUILD_NODES.find((node) => !result.state.buildings.some((building) => building.nodeId === node.id));
+    if (nextFree) setSelectedNode(nextFree.id);
+    commit(result.state, result.reason);
+  };
+
+  const repair = (buildingId: string) => {
+    const result = repairBuilding(state, buildingId);
+    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+  };
+
+  const runCycle = () => {
+    const economyState = advanceEconomy(state);
+    const expedition = advanceExpeditions(economyState);
+    const note = expedition.completed
+      ? `Exploración concluida: ${expeditionRewardLabel(expedition.completed.reward)} transferidos a la base.`
+      : `Ciclo ${expedition.state.cycle} cerrado. La red y el soporte vital fueron recalculados.`;
+    commit(expedition.state, note);
+  };
+
+  const research = (id: string) => {
+    const result = completeResearch(state, id);
+    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+  };
+
+  const launchExpedition = () => {
+    const target = state.expeditions[0];
+    const result = startExpedition(state, target.id);
+    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+  };
+
+  const selectSector = (id: TycoonState["sector"]) => {
+    const result = changeSector(state, id);
+    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+  };
+
   return (
-    <main className="game-shell" aria-label="Juego Lunar Rover Expedition">
-      <canvas ref={canvasRef} className="game-canvas" style={{ touchAction: "none" }} />
-      <section id="mission-hud" className="mission-hud" aria-live="polite">
-        <div className={`storm-veil ${activeMap.storm.active ? "is-active" : ""}`} aria-hidden="true" />
-        <header className="mission-header">
-          <div className="brand-lockup">
-            <img src={ASSET_URLS.logo} alt="Emblema orbital del rover" className="brand-mark" />
-            <div>
-              <p className="eyebrow">Misión de superficie · {activeMap.index}</p>
-              <h1>Lunar Rover <span>Expedition</span></h1>
-            </div>
-          </div>
-          <div className="mission-clock"><span>Tiempo de misión</span><strong id="mission-time">00:00</strong></div>
-          <LeaderboardPanel />
+    <main className="tycoon-shell" aria-label="Lunar Science Base, juego de gestión científica lunar">
+      <canvas ref={canvasRef} className="tycoon-canvas" aria-label="Vista isométrica interactiva de la base lunar" />
+      <section className="tycoon-hud" aria-live="polite">
+        <header className="tycoon-header">
+          <div className="base-brand"><img src={ASSET_URLS.logo} alt="Emblema orbital de Lunar Science Base" /><div><p>Consorcio científico lunar · Sector 01 {isDemo && <em className="demo-badge">Modo demo</em>}</p><h1>Lunar Science <span>Base</span></h1></div></div>
+          <div className="cycle-block"><span>Ciclo operativo</span><strong>{String(state.cycle).padStart(3, "0")}</strong><div><button type="button" className="science-trigger" onClick={() => setScienceOpen(true)}>Archivo científico</button><button type="button" onClick={runCycle}>Cerrar ciclo <b>↗</b></button></div></div>
         </header>
 
-        <aside className="telemetry-panel" aria-label="Telemetría del rover">
-          <p className="panel-kicker">Telemetría de campo</p>
-          <div className="meter-block">
-            <div className="meter-row"><span>Energía</span><strong id="energy-value">100%</strong></div>
-            <div className="energy-track"><i id="energy-bar" /></div>
+        <section className="resource-strip" aria-label="Recursos de la base">
+          {RESOURCE_META.map((resource) => {
+            const value = state.resources[resource.key];
+            const capacity = state.capacity[resource.key];
+            const rate = rates[resource.key];
+            return <div className={`resource-tile ${resource.tone}`} key={resource.key}><span>{resource.label}</span><strong>{Math.round(value)}<small>{resource.unit}</small></strong><i><b style={{ width: `${Math.min(100, value / capacity * 100)}%` }} /></i><em className={rate >= 0 ? "positive" : "negative"}>{rate >= 0 ? "+" : ""}{rate.toFixed(1)}/ciclo</em></div>;
+          })}
+        </section>
+
+        <aside className="build-console" aria-label="Catálogo de construcción">
+          <div className="panel-title"><span>01 / Construcción</span><b>{BASE_SECTORS.find((sector) => sector.id === state.sector)?.name}</b></div>
+          <button type="button" className="mobile-archive-trigger" onClick={() => setScienceOpen(true)}>Archivo científico <b>↗</b></button>
+          <div className="sector-selector" aria-label="Sectores de asentamiento">{BASE_SECTORS.map((sector) => <button key={sector.id} type="button" disabled={!canAccessSector(state, sector.id)} onClick={() => selectSector(sector.id)} className={state.sector === sector.id ? "active" : ""}><span>{sector.index}</span><b>{sector.name}</b><small>{canAccessSector(state, sector.id) ? sector.hazard : sector.requirementText}</small></button>)}</div>
+          <p className="panel-copy">Selecciona un módulo y un nodo libre. La red de energía define la capacidad operativa.</p>
+          <div className="building-catalog">
+            {BUILDINGS.map((building) => <button type="button" key={building.kind} onClick={() => setSelectedBuilding(building.kind)} className={`building-card ${selectedBuilding === building.kind ? "selected" : ""}`}><img src={building.image} alt="" /><span className={`accent ${building.accent}`} /><strong>{building.shortName}</strong><small>{formatCost(building)}</small></button>)}
           </div>
-          <dl className="telemetry-list">
-            <div><dt>Muestras</dt><dd id="sample-value">0/5</dd></div>
-            <div><dt>Objetivo</dt><dd id="distance-value">— m</dd></div>
-            <div><dt>Velocidad</dt><dd id="speed-value">0 km/h</dd></div>
-            <div><dt>Sector</dt><dd id="map-title">{activeMap.index} · {activeMap.name}</dd></div>
-          </dl>
-          <div className="terrain-code"><span>Estado de ruta</span><b id="storm-value">Visibilidad · plena</b></div>
-          <div className="optional-readout"><span>Desafío auxiliar</span><strong id="optional-value">0/{activeMap.secondary.positions.length}</strong><small id="optional-name">{activeMap.secondary.title}</small></div>
+          <div className="node-picker"><div><span>Nodo de montaje</span><b>{BUILD_NODES.find((node) => node.id === selectedNode)?.label ?? "—"}</b></div><div className="node-list">{freeNodes.map((node) => <button type="button" key={node.id} onClick={() => setSelectedNode(node.id)} className={selectedNode === node.id ? "selected" : ""}>{node.label}</button>)}</div></div>
+          <button type="button" className="build-action" onClick={() => build(selectedBuilding)}>Instalar {BUILDINGS.find((building) => building.kind === selectedBuilding)?.shortName} <span>+</span></button>
         </aside>
 
-        <section className="mission-brief" aria-label="Objetivo de la misión">
-          <p className="panel-kicker">Objetivo operativo</p>
-          <p id="mission-prompt">{activeMap.objectiveCopy}</p>
-          <div className="control-legend"><span><kbd>WASD</kbd> o <kbd>← ↑ ↓ →</kbd> conducir</span><span><kbd>Espacio</kbd> impulso</span><span><kbd>R</kbd> reiniciar</span></div>
-        </section>
+        <aside className="operations-console" aria-label="Estado operativo de la base">
+          <div className="panel-title"><span>02 / Operaciones</span><b>Red de superficie</b></div>
+          <div className="alert-stack">{state.alerts.length ? state.alerts.map((alert) => <article key={alert.id} className={`alert ${alert.tone}`}><b>{alert.label}</b><p>{alert.detail}</p></article>) : <article className="alert cyan"><b>Sistemas nominales</b><p>Ejecuta un ciclo para generar el primer diagnóstico.</p></article>}</div>
+          <div className="crew-line"><span>Tripulación activa</span><b>{state.crew.engineers} ing. · {state.crew.scientists} cie. · {state.crew.explorers} exp.</b></div>
+          <div className="module-list"><span>Módulos instalados ({state.buildings.length}/12)</span>{state.buildings.map((building) => <div key={building.id} className="module-row"><b>{BUILDINGS.find((definition) => definition.kind === building.kind)?.shortName}</b><i>{building.integrity}%</i>{building.integrity < 100 && <button type="button" onClick={() => repair(building.id)}>Reparar</button>}</div>)}</div>
+        </aside>
 
-        <div className="mission-intro">
-          <img src={ASSET_URLS.visualTarget} alt="Referencia de la misión lunar" />
-          <div className="intro-shade" />
-          <div className="intro-content">
-            <p className="eyebrow">Bitácora de exploración · {activeMap.name}</p>
-            <h2>La ruta está marcada.<br /><em>Haz que cuente.</em></h2>
-            <p>{activeMap.briefing}</p>
-            <div className="secondary-brief"><span>Desafío auxiliar · {activeMap.secondary.title}</span><b>{activeMap.secondary.directive}</b></div>
-            <div className="map-selector" aria-label="Seleccionar mapa de exploración">
-              <p>Selecciona una zona de aterrizaje</p>
-              <div className="map-options">
-                {MISSION_MAPS.map((map) => (
-                  <button key={map.id} type="button" disabled={!isMapUnlocked(map.id, progress)} onClick={() => chooseMap(map.id)} className={`map-option ${map.id === activeMap.id ? "is-active" : ""} ${!isMapUnlocked(map.id, progress) ? "is-locked" : ""}`}>
-                    <span>{map.index}</span><strong>{map.name}</strong><small>{isMapUnlocked(map.id, progress) ? `${progress.records[map.id].grade ? `Mejor grado ${progress.records[map.id].grade} · ` : ""}${map.subtitle}${progress.records[map.id].bestOptional ? ` · Aux. ${progress.records[map.id].bestOptional}/${map.secondary.positions.length}` : ""}` : `⌁ ${requirementLabel(map.id, progress)}`}</small>
-                  </button>
-                ))}
-              </div>
-              <p className="progress-key"><b>Certificación B</b> · 5 muestras · ≥30% de energía · ≤ 2:30</p>
-            </div>
-            <button id="mission-start" className="primary-action">Iniciar exploración <span>↗</span></button>
-          </div>
-        </div>
-
-        <section id="mission-result" className="mission-result" aria-live="assertive">
-          <p className="eyebrow">Informe de superficie</p>
-          <h2 id="result-title">Muestras aseguradas</h2>
-          <p id="result-copy" />
-          <p id="result-unlock" className="result-unlock" />
-          <button id="mission-restart" className="primary-action">Reiniciar misión <span>↻</span></button>
-        </section>
-
-        <div className="touch-controls" aria-label="Controles táctiles">
-          <div className="touch-steering"><button data-game-action="left" aria-label="Girar a la izquierda">←</button><button data-game-action="right" aria-label="Girar a la derecha">→</button></div>
-          <div className="touch-drive"><button data-game-action="backward" aria-label="Retroceder">↓</button><button data-game-action="forward" aria-label="Avanzar">↑</button><button data-game-action="boost" className="boost-button" aria-label="Activar impulso">⟐</button></div>
-        </div>
+        <footer className="base-log"><span>Bitácora de mando</span><p>{notice}</p><div className="expedition-line"><span>Rover de prospección</span><b>{activeExpedition ? `En ruta · ${activeExpedition.secondsRemaining} ciclos` : state.expeditions[0].state === "complete" ? "Regresó con carga" : `Listo · ${expeditionRewardLabel(state.expeditions[0].reward)}`}</b><button type="button" disabled={Boolean(activeExpedition)} onClick={launchExpedition}>{activeExpedition ? "Explorando" : "Lanzar exploración"} <i>↗</i></button></div><b>Arrastra la vista para inspeccionar los nodos · la simulación sólo avanza al cerrar un ciclo.</b></footer>
       </section>
+      <ScienceArchive state={state} open={scienceOpen} onClose={() => setScienceOpen(false)} onResearch={research} />
     </main>
   );
 }
