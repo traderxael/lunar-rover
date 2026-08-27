@@ -1,8 +1,11 @@
-/** Dirección visual: archivo de misión con tarjetas científicas y fuentes históricas verificables. */
-import { availableResearch, completeResearch, RESEARCH_NODES } from "@/game/ResearchManager";
-import type { TycoonState } from "@/game/TycoonState";
+/** Dirección visual: archivo de misión con tarjetas científicas, programas medibles y fuentes históricas verificables. */
+import { useState } from "react";
+import { availableResearch, RESEARCH_NODES } from "@/game/ResearchManager";
+import { CAMPAIGNS, campaignProgressFor, canStartCampaign } from "@/game/CampaignManager";
+import type { CampaignId, TycoonState } from "@/game/TycoonState";
+import { ASSET_URLS } from "@/game/assets";
 
-type Props = { state: TycoonState; open: boolean; onClose: () => void; onResearch: (id: string) => void };
+type Props = { state: TycoonState; open: boolean; onClose: () => void; onResearch: (id: string) => void; onStartCampaign: (id: CampaignId) => void };
 
 const TIMELINE = [
   { era: "1959–1976 · Unión Soviética", title: "Programa Luna", note: "Las misiones Luna constituyen uno de los primeros programas sistemáticos de exploración lunar robótica.", source: "Lunar and Planetary Institute", url: "https://www.lpi.usra.edu/lunar/missions/luna/" },
@@ -15,19 +18,29 @@ const TIMELINE = [
   { era: "Actualidad · alianza internacional", title: "Generación Artemis", note: "La exploración lunar sostenida combina infraestructura, entrega de carga, rovers y colaboración internacional.", source: "NASA", url: "https://www.nasa.gov/artemis/" },
 ];
 
-export default function ScienceArchive({ state, open, onClose, onResearch }: Props) {
+export default function ScienceArchive({ state, open, onClose, onResearch, onStartCampaign }: Props) {
+  const [view, setView] = useState<"research" | "campaigns">("research");
   if (!open) return null;
   const available = new Set(availableResearch(state).map((node) => node.id));
   return <section className="science-archive" role="dialog" aria-modal="true" aria-labelledby="science-title">
     <div className="archive-frame">
       <header className="archive-header"><div><span>03 / Investigación y legado</span><h2 id="science-title">Archivo de exploración</h2></div><button type="button" onClick={onClose} aria-label="Cerrar archivo de investigación">×</button></header>
+      <nav className="archive-tabs" aria-label="Secciones del archivo"><button type="button" className={view === "research" ? "active" : ""} onClick={() => setView("research")}>Tecnologías</button><button type="button" className={view === "campaigns" ? "active" : ""} onClick={() => setView("campaigns")}>Campañas</button></nav>
       <div className="archive-columns">
-        <article className="research-column"><p className="archive-kicker">Proyectos de la base · Datos disponibles: <b>{Math.round(state.resources.data)} u</b></p><div className="research-grid">{RESEARCH_NODES.map((node) => {
+        <article className="research-column">{view === "research" ? <><p className="archive-kicker">Proyectos de la base · Datos disponibles: <b>{Math.round(state.resources.data)} u</b></p><div className="research-grid">{RESEARCH_NODES.map((node) => {
           const complete = state.research.includes(node.id);
           const ready = available.has(node.id) && state.resources.data >= node.cost;
           const status = complete ? "complete" : ready ? "ready" : "locked";
           return <section key={node.id} className={`research-card ${status}`}><span>{node.era}</span><h3>{node.title}</h3><p>{node.description}</p><b>{node.effect}</b><div><small>{complete ? "Finalizada" : `${node.cost} datos`}</small><button type="button" disabled={!ready} onClick={() => onResearch(node.id)}>{complete ? "Activo" : ready ? "Investigar" : "Bloqueado"}</button></div></section>;
-        })}</div></article>
+        })}</div></> : <><p className="archive-kicker">Programas de largo plazo · Un solo programa puede permanecer activo.</p><div className="campaign-grid">{CAMPAIGNS.map((campaign) => {
+          const entry = state.campaigns[campaign.id];
+          const milestones = campaignProgressFor(state, campaign.id);
+          const validation = canStartCampaign(state, campaign.id);
+          const isActive = state.activeCampaignId === campaign.id;
+          const complete = entry.status === "complete";
+          const displayStatus = complete ? "complete" : isActive ? "active" : validation.ok ? "available" : "locked";
+          return <section key={campaign.id} className={`campaign-card ${displayStatus}`}><figure className="campaign-seal"><img src={ASSET_URLS.campaignSeals} alt="" /></figure><span>{campaign.code} · {campaign.era}</span><h3>{campaign.title}</h3><p>{campaign.description}</p><b>{campaign.reward}</b><ol>{milestones.map((milestone) => <li key={milestone.id} className={milestone.complete ? "complete" : ""}><div><strong>{milestone.complete ? "✓" : "○"} {milestone.title}</strong><small>{milestone.detail}</small></div><em>{milestone.value}/{milestone.target} {milestone.label}</em></li>)}</ol><div className="campaign-action"><small>{complete ? "Programa finalizado" : isActive ? "Programa activo" : validation.ok ? "Listo para iniciar" : campaign.requirementText}</small><button type="button" disabled={!validation.ok} onClick={() => onStartCampaign(campaign.id)}>{complete ? "Completado" : isActive ? "En curso" : validation.ok ? "Iniciar" : "Bloqueado"}</button></div></section>;
+        })}</div></>}</article>
         <article className="history-column"><p className="archive-kicker">Bitácora histórica internacional</p><div className="history-list">{TIMELINE.map((item) => <section key={item.title} className="history-card"><span>{item.era}</span><h3>{item.title}</h3><p>{item.note}</p><a href={item.url} target="_blank" rel="noreferrer">Fuente · {item.source} ↗</a></section>)}</div></article>
       </div>
       <footer className="archive-footer">La campaña se inspira en contribuciones de distintos programas espaciales. Sus nombres, identidades y decisiones pertenecen a la ficción del juego.</footer>

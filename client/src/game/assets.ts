@@ -14,4 +14,5 @@ export const ASSET_URLS = {
   laboratory: "/manus-storage/lunar-science-laboratory-module_f7492492.png",
   extractor: "/manus-storage/lunar-regolith-extractor-module_37cb8532.png",
   solar: "/manus-storage/lunar-solar-array-module_7a5777b1.png",
+  campaignSeals: "/manus-storage/lunar-science-campaign-seals_77106e63.png",
 } as const;

@@ -59,3 +59,13 @@
 - [x] Adaptar Tranquillitatis, Tycho y Selenita a sectores de asentamiento progresivo.
 - [x] Probar guardados, alertas, construcción, exploración, controles y modo demostración.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar la expansión tycoon.
+
+## Campañas científicas de largo plazo
+
+- [x] Definir tres programas, sus requisitos, hitos secuenciales y recompensas explícitas.
+- [x] Migrar el guardado de base al esquema v2 sin alterar el contenido de partidas v1.
+- [x] Implementar métricas acumuladas, progreso idempotente y bonos centralizados.
+- [x] Integrar campañas en el Archivo científico, la consola de operaciones y el modo `?demo`.
+- [x] Generar y registrar los sellos abstractos de programa sin marcas oficiales.
+- [x] Verificar migración, bloqueo, progreso, recompensa única, recarga y responsividad.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar la ampliación.

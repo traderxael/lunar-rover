@@ -83,3 +83,15 @@ La tabla mantiene las 15 mejores expediciones locales y ordena por puntuación d
 La clasificación añade medallas calculadas a partir de los registros existentes, sin modificar ni inventar datos. Para cada sector, el primer, segundo y tercer mejor resultado reciben respectivamente **Insignia de Órbita I**, **Insignia de Órbita II** e **Insignia de Órbita III**. La prioridad sigue el mismo orden de la tabla: puntuación más alta, menor tiempo, mayor energía y, finalmente, registro más reciente.
 
 Las insignias se representan como sellos instrumentales de tres metales (ámbar mineral, cian plateado y cobre lunar) con números romanos y etiqueta accesible. En la vista general, cada entrada compite solo contra expediciones del mismo sector; al filtrar un sector, se mantienen las mismas medallas y su explicación visible.
+
+## Campañas científicas de largo plazo
+
+La base añade tres programas de investigación persistentes y secuenciales. **Pioneros de superficie** requiere Autonomía de rover y convierte retornos, regolito y datos en una mejora de carga; **Protocolo de cooperación** exige laboratorio conjunto, laboratorio y antena para estabilizar datos y ampliar reserva; **Ciclo de recursos lunares** requiere Circuito de agua, dos solares y Selenita para validar agua y resistencia al polvo. Sólo un programa puede permanecer activo, sus hitos cuentan desde la activación y sus recompensas se aplican una única vez.
+
+| Riesgo | Enfoque | Verificación |
+|---|---|---|
+| Duplicación de recompensas | Línea base de métricas al iniciar y marca persistente de recompensa reclamada. | Recargar o cerrar ciclos consecutivos no aumenta dos veces bonos ni capacidad. |
+| Compatibilidad de partidas | Evolución del estado de base desde v1 a v2 bajo la misma clave local. | Módulos, recursos, sector, tecnologías y expediciones existentes se conservan. |
+| Lectura de objetivos | Archivo con pestañas de tecnologías/campañas y monitor breve en operaciones. | Cada programa muestra requisito, hito actual, progreso y efecto antes de iniciarse. |
+
+La implementación mantiene la cronología internacional como contexto educativo y utiliza sellos abstractos propios, documentados en `ASSETS.md`, sin emblemas institucionales ni referencias de patrocinio. El modo `?demo` activa el programa de Selenita para que una captura muestre el avance por ciclos, el rover y una recompensa concluida.

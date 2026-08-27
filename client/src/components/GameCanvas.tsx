@@ -15,6 +15,7 @@ import { completeResearch } from "@/game/ResearchManager";
 import ScienceArchive from "@/components/ScienceArchive";
 import { BASE_SECTORS, changeSector, canAccessSector } from "@/game/SectorManager";
 import { advanceDemoStep, createDemoTycoonState } from "@/game/DemoManager";
+import { campaignProgressFor, evaluateCampaignProgress, getCampaign, startCampaign } from "@/game/CampaignManager";
 
 const RESOURCE_META: Array<{ key: ResourceKey; label: string; unit: string; tone: "amber" | "cyan" }> = [
   { key: "energy", label: "Energía", unit: "kWh", tone: "amber" },
@@ -72,6 +73,14 @@ export default function GameCanvas() {
   useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
 
   useEffect(() => {
+    if (state.version === 2 && state.campaigns && state.campaignMetrics && state.campaignBonuses) return;
+    const migrated = loadTycoonState();
+    stateRef.current = migrated;
+    setState(migrated);
+    setNotice("Partida actualizada: los programas científicos están disponibles en el archivo.");
+  }, [state]);
+
+  useEffect(() => {
     if (!isDemo) return;
     const timer = window.setInterval(() => {
       const next = advanceDemoStep(stateRef.current ?? createDemoTycoonState());
@@ -83,6 +92,8 @@ export default function GameCanvas() {
   }, [isDemo]);
 
   const activeExpedition = state.expeditions.find((expedition) => expedition.state === "active");
+  const activeCampaign = state.activeCampaignId ? getCampaign(state.activeCampaignId) : null;
+  const activeMilestone = activeCampaign ? campaignProgressFor(state, activeCampaign.id).find((milestone) => !milestone.complete) : null;
 
   const build = (kind: BuildingKind) => {
     const nodeId = freeNodes.some((node) => node.id === selectedNode) ? selectedNode : freeNodes[0]?.id;
@@ -102,10 +113,16 @@ export default function GameCanvas() {
   const runCycle = () => {
     const economyState = advanceEconomy(state);
     const expedition = advanceExpeditions(economyState);
-    const note = expedition.completed
-      ? `Exploración concluida: ${expeditionRewardLabel(expedition.completed.reward)} transferidos a la base.`
-      : `Ciclo ${expedition.state.cycle} cerrado. La red y el soporte vital fueron recalculados.`;
-    commit(expedition.state, note);
+    const campaign = evaluateCampaignProgress(state, expedition.state, Boolean(expedition.completed));
+    const milestoneTitle = campaign.milestone && state.activeCampaignId ? getCampaign(state.activeCampaignId).milestones.find((milestone) => milestone.id === campaign.milestone)?.title : null;
+    const note = campaign.completed
+      ? `${getCampaign(campaign.completed).title} completado. Recompensa permanente aplicada a la red.`
+      : milestoneTitle
+        ? `Hito científico confirmado: ${milestoneTitle}.`
+        : expedition.completed
+          ? `Exploración concluida: ${expeditionRewardLabel(expedition.completed.reward)} transferidos a la base.`
+          : `Ciclo ${campaign.state.cycle} cerrado. La red y el soporte vital fueron recalculados.`;
+    commit(campaign.state, note);
   };
 
   const research = (id: string) => {
@@ -116,6 +133,11 @@ export default function GameCanvas() {
   const launchExpedition = () => {
     const target = state.expeditions[0];
     const result = startExpedition(state, target.id);
+    if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
+  };
+
+  const launchCampaign = (id: NonNullable<TycoonState["activeCampaignId"]>) => {
+    const result = startCampaign(state, id);
     if (result.ok) commit(result.state, result.reason); else setNotice(result.reason);
   };
 
@@ -157,13 +179,14 @@ export default function GameCanvas() {
         <aside className="operations-console" aria-label="Estado operativo de la base">
           <div className="panel-title"><span>02 / Operaciones</span><b>Red de superficie</b></div>
           <div className="alert-stack">{state.alerts.length ? state.alerts.map((alert) => <article key={alert.id} className={`alert ${alert.tone}`}><b>{alert.label}</b><p>{alert.detail}</p></article>) : <article className="alert cyan"><b>Sistemas nominales</b><p>Ejecuta un ciclo para generar el primer diagnóstico.</p></article>}</div>
+          <section className={`campaign-monitor ${activeCampaign ? "active" : ""}`}><span>03 / Programa científico</span>{activeCampaign && activeMilestone ? <><b>{activeCampaign.code} · {activeCampaign.title}</b><p>{activeMilestone.title} · {activeMilestone.value}/{activeMilestone.target} {activeMilestone.label}</p><i><em style={{ width: `${activeMilestone.value / activeMilestone.target * 100}%` }} /></i></> : <p>Sin programa activo. Consulta el archivo científico.</p>}</section>
           <div className="crew-line"><span>Tripulación activa</span><b>{state.crew.engineers} ing. · {state.crew.scientists} cie. · {state.crew.explorers} exp.</b></div>
           <div className="module-list"><span>Módulos instalados ({state.buildings.length}/12)</span>{state.buildings.map((building) => <div key={building.id} className="module-row"><b>{BUILDINGS.find((definition) => definition.kind === building.kind)?.shortName}</b><i>{building.integrity}%</i>{building.integrity < 100 && <button type="button" onClick={() => repair(building.id)}>Reparar</button>}</div>)}</div>
         </aside>
 
         <footer className="base-log"><span>Bitácora de mando</span><p>{notice}</p><div className="expedition-line"><span>Rover de prospección</span><b>{activeExpedition ? `En ruta · ${activeExpedition.secondsRemaining} ciclos` : state.expeditions[0].state === "complete" ? "Regresó con carga" : `Listo · ${expeditionRewardLabel(state.expeditions[0].reward)}`}</b><button type="button" disabled={Boolean(activeExpedition)} onClick={launchExpedition}>{activeExpedition ? "Explorando" : "Lanzar exploración"} <i>↗</i></button></div><b>Arrastra la vista para inspeccionar los nodos · la simulación sólo avanza al cerrar un ciclo.</b></footer>
       </section>
-      <ScienceArchive state={state} open={scienceOpen} onClose={() => setScienceOpen(false)} onResearch={research} />
+      <ScienceArchive state={state} open={scienceOpen} onClose={() => setScienceOpen(false)} onResearch={research} onStartCampaign={launchCampaign} />
     </main>
   );
 }

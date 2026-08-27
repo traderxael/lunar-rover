@@ -1,4 +1,4 @@
-import type { ExpeditionRecord, ResourceKey, Resources, TycoonState } from "./TycoonState";
+import { campaignBonusesTemplate, type ExpeditionRecord, type ResourceKey, type Resources, type TycoonState } from "./TycoonState";
 
 const EXPEDITION_ENERGY_COST = 12;
 
@@ -22,7 +22,7 @@ export function advanceExpeditions(state: TycoonState) {
   });
   if (!completed) return { state: { ...state, expeditions }, completed: null };
   const finished = completed as ExpeditionRecord;
-  const multiplier = state.research.includes("rover-autonomy") ? 1.25 : 1;
+  const multiplier = (state.research.includes("rover-autonomy") ? 1.25 : 1) + (state.campaignBonuses ?? campaignBonusesTemplate()).expeditionRewardBonus;
   const resources = { ...state.resources };
   (Object.entries(finished.reward) as Array<[ResourceKey, number]>).forEach(([key, value]) => {
     resources[key] = Math.min(state.capacity[key], resources[key] + Math.round(value * multiplier));

@@ -17,3 +17,11 @@ Las expediciones ya no dependen de temporizadores del navegador. El rover utiliz
 `?demo` crea un snapshot no persistente de Selenita con dos solares, laboratorio, extractora, antena, investigaciones terminadas y una expedición activa. Su piloto automático alterna de forma determinista entre ciclos y nuevos lanzamientos para mostrar el terreno, los módulos, la economía, el daño reparable y el rover sin tocar partidas reales.
 
 La comprobación final cubrió construcción y costes, retorno de expedición de 9 regolito y 7 datos, migración de guardado, acceso a Tycho y Selenita, daño periódico y reparación, archivo científico, escritorio y móvil. `pnpm check` y `pnpm build` completaron correctamente; el paquete de Babylon continúa mostrando una advertencia no bloqueante por un chunk de aproximadamente 1,85 MB.
+
+## Campañas científicas de largo plazo
+
+El esquema de base usa ahora la versión 2 y conserva la misma clave de almacenamiento. Una partida v1 migra sin modificar sus módulos, recursos, investigaciones, sector o expediciones; sólo incorpora tres campañas vacías, sus métricas acumuladas y bonos a cero. Las campañas registran una línea base al comenzar, de modo que los requisitos cuantitativos sólo consideran acciones posteriores a la activación.
+
+`CampaignManager` concentra tres programas: Pioneros de superficie, Protocolo de cooperación y Ciclo de recursos lunares. Una única campaña puede estar activa. Economía y retorno de rover entregan un snapshot al gestor, que actualiza hitos y aplica cada recompensa de finalización una sola vez. Los bonos entran por `EconomyManager`, `ExpeditionManager` y capacidad del estado, no por condiciones de interfaz dispersas.
+
+El Archivo científico ofrece una vista de campañas con requisitos, progreso, efectos y sellos abstractos generados; el panel de operaciones muestra el hito activo. El modo `?demo` inicia el programa de Selenita y avanza hasta demostrar sus tres hitos y la mejora de agua, sin escribir almacenamiento local.

@@ -5,6 +5,7 @@
 import { advanceEconomy } from "./EconomyManager";
 import { advanceExpeditions, startExpedition } from "./ExpeditionManager";
 import { createInitialTycoonState, type TycoonState } from "./TycoonState";
+import { evaluateCampaignProgress } from "./CampaignManager";
 
 export function createDemoTycoonState(): TycoonState {
   const initial = createInitialTycoonState();
@@ -24,6 +25,9 @@ export function createDemoTycoonState(): TycoonState {
     research: ["orbital-telemetry", "rover-autonomy", "joint-laboratory", "water-loop"],
     alerts: [{ id: "demo-selenite", tone: "amber", label: "Viento de polvo previsto", detail: "La red conserva reserva energética para la próxima perturbación de Selenita." }],
     expeditions: [{ ...initial.expeditions[0], state: "active", secondsRemaining: 2 }],
+    campaigns: { ...initial.campaigns, "lunar-resource-cycle": { id: "lunar-resource-cycle", status: "active", completedMilestones: [], rewardsClaimed: [], startedAt: Date.now(), startedMetrics: { cyclesClosed: 1, nominalCycles: 1, roverReturns: 0, regolithCollected: 0, dataGenerated: 0, dustCyclesWithReserve: 0 } } },
+    activeCampaignId: "lunar-resource-cycle",
+    campaignMetrics: { cyclesClosed: 2, nominalCycles: 2, roverReturns: 0, regolithCollected: 8, dataGenerated: 8, dustCyclesWithReserve: 0 },
   };
 }
 
@@ -32,5 +36,6 @@ export function advanceDemoStep(state: TycoonState): TycoonState {
   if (rover.state !== "active") {
     return startExpedition(state, rover.id).state;
   }
-  return advanceExpeditions(advanceEconomy(state)).state;
+  const expedition = advanceExpeditions(advanceEconomy(state));
+  return evaluateCampaignProgress(state, expedition.state, Boolean(expedition.completed)).state;
 }
