@@ -107,3 +107,7 @@ El Archivo científico incorpora una tercera vista para la historia propia de ca
 | Lectura visual | Filtros por tipo, una ruta cronológica y un panel de detalle separan listas densas de la recompensa seleccionada. | El historial es navegable con teclado y conserva legibilidad tanto en escritorio como en móvil. |
 
 El modo `?demo` siembra una bitácora de Selenita con módulos, ciencia, sector, hitos, retornos y dos recompensas. Al avanzar, agrega eventos deterministas para presentar el historial en una captura sin tocar partidas reales.
+
+### Marcadores de rareza
+
+La bitácora añade cuatro escalas de relevancia: **Señal**, **Notable**, **Raro** e **Hito mayor**. La regla se deriva centralmente del tipo de evento y puede guardarse en la entrada nueva; los eventos previos sin este campo reciben la misma clasificación al leerse. Cada escala se representa con texto, un glifo y contraste propio para que la importancia siga siendo perceptible sin depender del color.

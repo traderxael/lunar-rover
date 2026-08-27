@@ -33,3 +33,9 @@ El guardado de la base evoluciona al esquema v3 dentro de la misma clave local. 
 `DiscoveryManager` es el único responsable de añadir y ordenar eventos. `GameCanvas` registra instalaciones, reparaciones, investigaciones, retornos de rover, inicio/completado de campañas y primer acceso a sectores con identificadores estables para impedir duplicados. El Archivo científico incorpora una pestaña Bitácora con filtros por módulos, ciencia, rover, hitos, recompensas y sectores, más un panel de detalle seleccionable.
 
 La demostración parte de una historia previa de Selenita y añade sus retornos, hitos y recompensa de sostenibilidad conforme avanza. Esto permite verificar una línea de tiempo completa sin escribir datos de una campaña real.
+
+## Marcadores de rareza
+
+El historial clasifica los descubrimientos con cuatro niveles, siempre visibles mediante texto, símbolo y color: **Señal** para infraestructura rutinaria, **Notable** para ciencia y retornos relevantes, **Raro** para sectores e hitos, e **Hito mayor** para fundaciones y recompensas permanentes. `DiscoveryManager` deriva la rareza cuando una entrada heredada no la contiene y la persiste en los nuevos registros; por tanto, no fue necesario modificar ni invalidar guardados v3 existentes.
+
+La pestaña Bitácora muestra una leyenda y una etiqueta compacta por evento, y repite la rareza en el detalle seleccionado. La demostración utiliza el mismo clasificador para evidenciar los cuatro niveles sobre una historia completa de Selenita.

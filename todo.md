@@ -78,3 +78,11 @@
 - [x] Actualizar el modo demostración y documentar la nueva arquitectura.
 - [x] Verificar guardado, recarga, interacción, accesibilidad y diseño móvil.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar el historial.
+
+## Marcadores de rareza del historial
+
+- [x] Definir niveles de rareza y compatibilidad de entradas guardadas.
+- [x] Clasificar eventos y presentar señales visuales accesibles de rareza.
+- [x] Actualizar demostración, documentación y vistas responsive.
+- [x] Verificar persistencia, filtros, contraste y compilación.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar los marcadores.

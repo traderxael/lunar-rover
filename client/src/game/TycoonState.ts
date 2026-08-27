@@ -57,7 +57,8 @@ export type CampaignBonuses = {
 };
 
 export type DiscoveryKind = "foundation" | "infrastructure" | "research" | "expedition" | "milestone" | "reward" | "sector";
-export type DiscoveryEntry = { id: string; kind: DiscoveryKind; title: string; detail: string; cycle: number; occurredAt: number; reward?: string };
+export type DiscoveryRarity = "signal" | "notable" | "rare" | "landmark";
+export type DiscoveryEntry = { id: string; kind: DiscoveryKind; title: string; detail: string; cycle: number; occurredAt: number; reward?: string; rarity?: DiscoveryRarity };
 
 export type TycoonState = {
   version: 3;
@@ -84,6 +85,7 @@ export const TYCOON_STORAGE_KEY = "lunar-science-base-tycoon-v1";
 const LEGACY_STORAGE_KEY = "lunar-rover-expedition-progress-v1";
 const campaignIds: CampaignId[] = ["surface-pioneers", "cooperation-protocol", "lunar-resource-cycle"];
 const discoveryKinds: DiscoveryKind[] = ["foundation", "infrastructure", "research", "expedition", "milestone", "reward", "sector"];
+const discoveryRarities: DiscoveryRarity[] = ["signal", "notable", "rare", "landmark"];
 
 export const resourceTemplate = (): Resources => ({ energy: 0, oxygen: 0, water: 0, regolith: 0, data: 0 });
 
@@ -187,7 +189,7 @@ function normalizeDiscoveries(discoveries?: unknown): DiscoveryEntry[] {
     if (!candidate || typeof candidate !== "object") return next;
     const entry = candidate as Partial<DiscoveryEntry>;
     if (typeof entry.id !== "string" || typeof entry.title !== "string" || typeof entry.detail !== "string" || !discoveryKinds.includes(entry.kind as DiscoveryKind)) return next;
-    next.push({ id: entry.id, kind: entry.kind as DiscoveryKind, title: entry.title, detail: entry.detail, cycle: typeof entry.cycle === "number" ? Math.max(1, Math.floor(entry.cycle)) : 1, occurredAt: typeof entry.occurredAt === "number" ? entry.occurredAt : Date.now(), ...(typeof entry.reward === "string" ? { reward: entry.reward } : {}) });
+    next.push({ id: entry.id, kind: entry.kind as DiscoveryKind, title: entry.title, detail: entry.detail, cycle: typeof entry.cycle === "number" ? Math.max(1, Math.floor(entry.cycle)) : 1, occurredAt: typeof entry.occurredAt === "number" ? entry.occurredAt : Date.now(), ...(typeof entry.reward === "string" ? { reward: entry.reward } : {}), ...(discoveryRarities.includes(entry.rarity as DiscoveryRarity) ? { rarity: entry.rarity as DiscoveryRarity } : {}) });
     return next;
   }, []).slice(-80);
 }
