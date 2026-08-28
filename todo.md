@@ -100,3 +100,10 @@
 - [x] Integrar selector de orden, desempates deterministas y señales accesibles.
 - [x] Verificar ordenamiento, responsividad, persistencia y compilación.
 - [x] Guardar el checkpoint, sincronizar GitHub y entregar el ordenamiento.
+
+## Búsqueda textual del historial
+
+- [x] Definir consulta normalizada compatible con filtros y órdenes activos.
+- [x] Integrar campo de búsqueda, coincidencias y estado vacío accesible.
+- [x] Verificar búsqueda compuesta, diseño móvil, persistencia y compilación.
+- [x] Guardar el checkpoint, sincronizar GitHub y entregar la búsqueda.

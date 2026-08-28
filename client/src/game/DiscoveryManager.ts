@@ -29,8 +29,18 @@ export function recordDiscoveries(state: TycoonState, drafts: DiscoveryDraft[]):
 
 const rarityRank: Record<DiscoveryRarity, number> = { signal: 1, notable: 2, rare: 3, landmark: 4 };
 
-export function visibleDiscoveries(state: TycoonState, filter: DiscoveryFilter, rarity: DiscoveryRarityFilter = "all", sort: DiscoverySort = "cycle-desc") {
-  const entries = state.discoveries.filter((entry) => (filter === "all" || entry.kind === filter) && (rarity === "all" || rarityForDiscovery(entry) === rarity));
+export function normalizedDiscoveryQuery(query: string) {
+  return query.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLocaleLowerCase("es-ES").trim();
+}
+
+export function discoveryMatchesQuery(entry: DiscoveryEntry, query: string) {
+  const normalizedQuery = normalizedDiscoveryQuery(query);
+  if (!normalizedQuery) return true;
+  return normalizedDiscoveryQuery([entry.title, entry.detail, entry.reward ?? ""].join(" ")).includes(normalizedQuery);
+}
+
+export function visibleDiscoveries(state: TycoonState, filter: DiscoveryFilter, rarity: DiscoveryRarityFilter = "all", sort: DiscoverySort = "cycle-desc", query = "") {
+  const entries = state.discoveries.filter((entry) => (filter === "all" || entry.kind === filter) && (rarity === "all" || rarityForDiscovery(entry) === rarity) && discoveryMatchesQuery(entry, query));
   return [...entries].sort((a, b) => {
     if (sort === "rarity-desc") return rarityRank[rarityForDiscovery(b)] - rarityRank[rarityForDiscovery(a)] || b.cycle - a.cycle || b.occurredAt - a.occurredAt || a.id.localeCompare(b.id);
     const direction = sort === "cycle-asc" ? 1 : -1;

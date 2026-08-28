@@ -119,3 +119,7 @@ El historial añade un segundo selector para **Todas**, **Señal**, **Notable**,
 #### Ordenamiento
 
 La bitácora permite ordenar la vista filtrada por **Ciclo descendente**, **Ciclo ascendente** o **Rareza**. El orden de rareza prioriza Hitos mayores, Raros, Notables y Señales; el ciclo y la marca temporal resuelven empates para que las capturas y la navegación sean deterministas.
+
+#### Búsqueda textual
+
+El encabezado del historial incorpora una búsqueda que consulta títulos, detalles y recompensas, sin distinguir acentos ni mayúsculas. Se combina con filtros y orden, no modifica el guardado y ofrece un control de limpieza junto con un estado vacío que conserva el término consultado.

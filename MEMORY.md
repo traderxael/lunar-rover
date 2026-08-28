@@ -47,3 +47,7 @@ La bitácora permite combinar de forma acumulativa un filtro de **tipo** con un 
 ## Ordenamiento del historial
 
 `DiscoveryManager` amplía su consulta pura con tres órdenes no persistentes: ciclo descendente, ciclo ascendente y rareza descendente. En el orden por rareza, los Hitos mayores anteceden a Raros, Notables y Señales; ciclo, marca temporal e identificador estabilizan los empates. El selector es independiente de los filtros activos, conserva la entrada seleccionada cuando aún coincide y no altera el guardado local.
+
+## Búsqueda textual del historial
+
+La bitácora incorpora una consulta no persistente que busca de forma normalizada y sin distinguir acentos ni mayúsculas en el título, detalle y recompensa de cada descubrimiento. `DiscoveryManager` aplica la consulta junto con el tipo, la rareza y el orden antes de devolver la vista; por tanto, no altera los eventos ni su clasificación. El campo tiene una instrucción asociada, un control para limpiar la búsqueda y un estado vacío que muestra el término consultado.
