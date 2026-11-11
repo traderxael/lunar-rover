@@ -4,6 +4,7 @@
  */
 export const ASSET_URLS = {
   visualTarget: "/manus-storage/lunar-rover-visual-target_5538c836.png",
+  roverModel: "/manus-storage/lunar-rover-3d_fea7b21a.glb",
   regolith: "/manus-storage/lunar-regolith-tile_b1cfd882.png",
   instrumentDecal: "/manus-storage/rover-instrument-decal_a8453884.png",
   logo: "/manus-storage/lunar-rover-mark_4f238dab.png",
