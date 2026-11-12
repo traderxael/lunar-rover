@@ -2,16 +2,21 @@ import * as THREE from "three";
 import { MISSION_MAPS, type MissionMap } from "@/game/MissionMap";
 import type { TycoonState } from "@/game/TycoonState";
 import { ASSET_URLS } from "@/game/assets";
+import { createMissionState, startMission, stepMission, type MissionState } from "@/game/mission";
+import { TelemetryStore } from "@/game/telemetry";
 import { BaseWorld } from "./base";
 import { InputManager } from "./input";
+import { createMissionView, type MissionView } from "./missionView";
 import { createRover, type Rover } from "./rover";
 import { createSky } from "./sky";
-import { createLunarTerrain, createRegolithTexture, type LunarTerrain } from "./terrain";
+import { createLunarTerrain, createRegolithTexture, deepCraterAt, type LunarTerrain } from "./terrain";
 
 export type GameHandle = {
   syncTycoonState: (state: TycoonState) => void;
   showBase: () => void;
-  showMission: (sector: TycoonState["sector"]) => void;
+  startMission: (sector: TycoonState["sector"]) => void;
+  restartMission: () => void;
+  telemetry: TelemetryStore;
   dispose: () => void;
 };
 
@@ -60,12 +65,13 @@ function addLights(scene: THREE.Scene) {
 
 /**
  * Dueño del renderer y de las dos escenas del juego: la base y la superficie.
- * Expone un contrato estable (`sync`, `show*`, `dispose`) para que React no
- * tenga que saber qué motor hay debajo.
+ * Expone un contrato estable para que React no tenga que saber qué motor hay
+ * debajo, y un canal de telemetría efímero para el HUD.
  */
 export async function createGameScene(canvas: HTMLCanvasElement, initialState: TycoonState): Promise<GameHandle> {
   const renderer = createRenderer(canvas);
   const input = new InputManager();
+  const telemetry = new TelemetryStore();
 
   // ---- Escena de base -------------------------------------------------------
   const baseScene = new THREE.Scene();
@@ -96,32 +102,33 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   let missionTerrain: LunarTerrain | null = null;
   let missionRegolith: THREE.Texture | null = null;
   let missionRover: Rover | null = null;
+  let missionView: MissionView | null = null;
   let missionMap: MissionMap = MISSION_MAPS[0];
+  let missionState: MissionState = createMissionState(missionMap);
+  let missionElapsed = 0;
+
   const cameraTarget = new THREE.Vector3();
   const desiredCamera = new THREE.Vector3();
   const lookTarget = new THREE.Vector3();
 
-  const buildMission = (map: MissionMap) => {
-    missionTerrain?.dispose();
-    missionTerrain?.mesh.removeFromParent();
-    missionRegolith?.dispose();
-    missionRover?.dispose();
-
-    missionMap = map;
-    missionRegolith = createRegolithTexture(map.terrainTexture === "deepCraterRegolith" ? ASSET_URLS.deepCraterRegolith : ASSET_URLS.regolith);
-    missionTerrain = createLunarTerrain(map, missionRegolith);
-    missionScene.add(missionTerrain.mesh);
-
-    const start = new THREE.Vector3(map.start.x, 0, map.start.z);
-    missionRover = createRover(map, start);
-    missionScene.add(missionRover.object);
-
-    missionScene.background = new THREE.Color(map.skyColor);
-    (missionScene.fog as THREE.FogExp2).color = new THREE.Color(map.ambientColor);
-
-    // La cámara arranca ya detrás del rover para que el primer fotograma no
-    // venga desde el origen del mundo.
-    updateChaseCamera(1, true);
+  const publishTelemetry = (speed: number) => {
+    telemetry.set({
+      status: missionState.status,
+      sector: missionState.sector,
+      sectorName: missionMap.name,
+      sectorIndex: missionMap.index,
+      energy: missionState.energy,
+      maxEnergy: missionState.maxEnergy,
+      collected: missionState.collected,
+      total: missionState.total,
+      optionalCollected: missionState.optionalCollected,
+      optionalTotal: missionState.optionalTotal,
+      elapsed: missionState.elapsed,
+      speed,
+      distanceToTarget: missionState.distanceToTarget,
+      hazard: missionState.hazard,
+      storm: missionState.storm,
+    });
   };
 
   function updateChaseCamera(delta: number, snap = false) {
@@ -136,13 +143,41 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
       missionRover.position.z - forwardZ * CHASE.distance,
     );
 
-    const blend = snap ? 1 : 1 - Math.exp(-delta * 4.2);
-    missionCamera.position.lerp(desiredCamera, blend);
+    missionCamera.position.lerp(desiredCamera, snap ? 1 : 1 - Math.exp(-delta * 4.2));
 
     lookTarget.set(missionRover.position.x, missionRover.position.y + CHASE.look, missionRover.position.z);
     cameraTarget.lerp(lookTarget, snap ? 1 : 1 - Math.exp(-delta * 6));
     missionCamera.lookAt(cameraTarget);
   }
+
+  const buildMission = (map: MissionMap) => {
+    missionTerrain?.dispose();
+    missionTerrain?.mesh.removeFromParent();
+    missionRegolith?.dispose();
+    missionRover?.dispose();
+    missionView?.dispose();
+
+    missionMap = map;
+    missionState = createMissionState(map);
+    missionElapsed = 0;
+
+    missionRegolith = createRegolithTexture(map.terrainTexture === "deepCraterRegolith" ? ASSET_URLS.deepCraterRegolith : ASSET_URLS.regolith);
+    missionTerrain = createLunarTerrain(map, missionRegolith);
+    missionScene.add(missionTerrain.mesh);
+
+    missionRover = createRover(map, new THREE.Vector3(map.start.x, 0, map.start.z));
+    missionScene.add(missionRover.object);
+
+    missionView = createMissionView(map);
+    missionScene.add(missionView.group);
+    missionView.sync(missionState.samples, 0);
+
+    missionScene.background = new THREE.Color(map.skyColor);
+    (missionScene.fog as THREE.FogExp2).color = new THREE.Color(map.ambientColor);
+
+    publishTelemetry(0);
+    updateChaseCamera(1, true);
+  };
 
   buildMission(missionMap);
 
@@ -163,6 +198,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   let lastY = 0;
 
   const onPointerDown = (event: PointerEvent) => {
+    if (active.camera !== baseCamera) return;
     dragging = true;
     lastX = event.clientX;
     lastY = event.clientY;
@@ -208,22 +244,58 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
 
   // ---- Bucle --------------------------------------------------------------
   const baseView = { scene: baseScene, camera: baseCamera, sky: baseSky };
-  const missionView = { scene: missionScene, camera: missionCamera, sky: missionSky };
-  let active: typeof baseView = baseView;
+  const missionViewRef = { scene: missionScene, camera: missionCamera, sky: missionSky };
+  let active: { scene: THREE.Scene; camera: THREE.PerspectiveCamera; sky: typeof baseSky } = baseView;
   const clock = new THREE.Clock();
+
+  const stepMissionFrame = (delta: number) => {
+    if (!missionRover || !missionView) return;
+
+    const actions = input.read();
+
+    if (actions.reset) {
+      missionState = createMissionState(missionMap);
+      missionRover.reset();
+      missionView.sync(missionState.samples, missionElapsed);
+    }
+
+    const canMove = missionState.status === "active" || missionState.status === "briefing";
+    const travelled = missionRover.update(delta, actions, canMove);
+
+    if (missionState.status === "briefing" && (actions.throttle !== 0 || actions.steer !== 0)) {
+      missionState = startMission(missionState);
+    }
+
+    const inDeepCrater = Boolean(deepCraterAt(missionMap, missionRover.position.x, missionRover.position.z));
+    if (inDeepCrater) missionRover.applyDrag(1 - 1.6 * delta);
+
+    missionState = stepMission(
+      missionState,
+      {
+        delta,
+        x: missionRover.position.x,
+        z: missionRover.position.z,
+        distance: travelled,
+        boosted: actions.boost && travelled > 0,
+        inDeepCrater,
+      },
+      missionMap,
+    );
+
+    missionElapsed += delta;
+    missionView.sync(missionState.samples, missionElapsed);
+    missionView.update(delta, missionElapsed);
+    updateChaseCamera(delta);
+    publishTelemetry(Math.abs(missionRover.speed));
+  };
 
   renderer.setAnimationLoop(() => {
     const delta = Math.min(clock.getDelta(), 0.05);
-
     if (active === baseView) {
       baseWorld.update(delta);
-    } else if (missionRover) {
-      const actions = input.read();
-      if (actions.reset) missionRover.reset();
-      missionRover.update(delta, actions, true);
-      updateChaseCamera(delta);
+    } else {
+      stepMissionFrame(delta);
     }
-
     renderer.render(active.scene, active.camera);
   });
 
@@ -233,15 +305,14 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
       baseScene,
       missionScene,
       baseWorld,
+      telemetry,
+      missionState: () => missionState,
       renderFrame: () => renderer.render(active.scene, active.camera),
       setActive: (which: string) => {
-        active = which === "mission" ? missionView : baseView;
+        active = which === "mission" ? missionViewRef : baseView;
       },
       tick: (delta: number) => {
-        if (active === missionView && missionRover) {
-          missionRover.update(delta, input.read(), true);
-          updateChaseCamera(delta);
-        }
+        stepMissionFrame(delta);
         renderer.render(active.scene, active.camera);
       },
       rover: () => missionRover,
@@ -253,12 +324,21 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     showBase: () => {
       active = baseView;
     },
-    showMission: (sector) => {
+    startMission: (sector) => {
       const map = MISSION_MAPS.find((candidate) => candidate.id === sector) ?? MISSION_MAPS[0];
       if (map.id !== missionMap.id) buildMission(map);
-      active = missionView;
+      missionState = startMission(missionState);
+      active = missionViewRef;
       updateChaseCamera(1, true);
     },
+    restartMission: () => {
+      missionState = createMissionState(missionMap);
+      missionRover?.reset();
+      missionView?.sync(missionState.samples, missionElapsed);
+      publishTelemetry(0);
+      updateChaseCamera(1, true);
+    },
+    telemetry,
     dispose: () => {
       renderer.setAnimationLoop(null);
       window.removeEventListener("resize", resize);
@@ -272,6 +352,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
       baseWorld.dispose();
       baseSky.dispose();
       missionRover?.dispose();
+      missionView?.dispose();
       missionTerrain?.dispose();
       missionRegolith?.dispose();
       missionSky.dispose();

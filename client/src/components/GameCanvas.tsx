@@ -12,6 +12,8 @@ import { loadTycoonState, saveTycoonState, type BuildingKind, type ResourceKey, 
 import { advanceExpeditions, expeditionRewardLabel, startExpedition } from "@/game/ExpeditionManager";
 import { completeResearch } from "@/game/ResearchManager";
 import ScienceArchive from "@/components/ScienceArchive";
+import MissionHud from "@/components/MissionHud";
+import type { TelemetryStore } from "@/game/telemetry";
 import { BASE_SECTORS, changeSector, canAccessSector } from "@/game/SectorManager";
 import { advanceDemoStep, createDemoTycoonState } from "@/game/DemoManager";
 import { campaignProgressFor, evaluateCampaignProgress, getCampaign, startCampaign } from "@/game/CampaignManager";
@@ -42,6 +44,7 @@ export default function GameCanvas() {
   const [selectedBuilding, setSelectedBuilding] = useState<BuildingKind>("laboratory");
   const [notice, setNotice] = useState("Bitácora inicial cargada. La base está en estado operativo.");
   const [scienceOpen, setScienceOpen] = useState(false);
+  const [telemetry, setTelemetry] = useState<TelemetryStore | null>(null);
 
   stateRef.current = state;
   const freeNodes = useMemo(() => BUILD_NODES.filter((node) => !state.buildings.some((building) => building.nodeId === node.id)), [state.buildings]);
@@ -64,9 +67,10 @@ export default function GameCanvas() {
       if (disposed) { game.dispose(); return; }
       handle = game;
       handleRef.current = game;
+      setTelemetry(game.telemetry);
       game.syncTycoonState(stateRef.current ?? loadTycoonState());
     });
-    return () => { disposed = true; handle?.dispose(); handleRef.current = null; startedRef.current = false; };
+    return () => { disposed = true; handle?.dispose(); handleRef.current = null; setTelemetry(null); startedRef.current = false; };
   }, []);
 
   useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
@@ -204,6 +208,14 @@ export default function GameCanvas() {
         <footer className="base-log"><span>Bitácora de mando</span><p>{notice}</p><div className="expedition-line"><span>Rover de prospección</span><b>{activeExpedition ? `En ruta · ${activeExpedition.secondsRemaining} ciclos` : state.expeditions[0].state === "complete" ? "Regresó con carga" : `Listo · ${expeditionRewardLabel(state.expeditions[0].reward)}`}</b><button type="button" disabled={Boolean(activeExpedition)} onClick={launchExpedition}>{activeExpedition ? "Explorando" : "Lanzar exploración"} <i>↗</i></button></div><b>Arrastra la vista para inspeccionar los nodos · la simulación sólo avanza al cerrar un ciclo.</b></footer>
       </section>
       <ScienceArchive state={state} open={scienceOpen} onClose={() => setScienceOpen(false)} onResearch={research} onStartCampaign={launchCampaign} />
+      {telemetry && (
+        <MissionHud
+          store={telemetry}
+          onStart={() => handleRef.current?.startMission(state.sector)}
+          onRestart={() => handleRef.current?.restartMission()}
+          onExit={() => handleRef.current?.showBase()}
+        />
+      )}
     </main>
   );
 }

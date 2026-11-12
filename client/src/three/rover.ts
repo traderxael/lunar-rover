@@ -24,7 +24,8 @@ export type Rover = {
   object: THREE.Group;
   position: THREE.Vector3;
   speed: number;
-  update: (delta: number, actions: GameActions, canMove: boolean) => void;
+  update: (delta: number, actions: GameActions, canMove: boolean) => number;
+  applyDrag: (factor: number) => void;
   reset: () => void;
   dispose: () => void;
 };
@@ -197,7 +198,7 @@ export function createRover(map: MissionMap, start: THREE.Vector3): Rover {
     update(delta, actions, canMove) {
       if (!canMove) {
         updateDust(delta);
-        return;
+        return 0;
       }
 
       if (actions.throttle !== 0) {
@@ -243,6 +244,11 @@ export function createRover(map: MissionMap, start: THREE.Vector3): Rover {
 
       if (Math.abs(speed) > 1.4) emitDust(boosted ? 4 : 2);
       updateDust(delta);
+
+      return Math.abs(distance);
+    },
+    applyDrag(factor) {
+      speed *= factor;
     },
     reset,
     dispose() {
