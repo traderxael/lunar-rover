@@ -21,7 +21,9 @@ import { recordDiscoveries, recordDiscovery, type DiscoveryDraft } from "@/game/
 import { RESEARCH_NODES } from "@/game/ResearchManager";
 import { MISSION_MAPS } from "@/game/MissionMap";
 import { applyMissionResult } from "@/game/missionReward";
-import { recordMission } from "@/game/Progression";
+import { recordMission, type MapId } from "@/game/Progression";
+import { Briefing, PausePanel, ResultPanel, SectorSelect, TitleScreen } from "@/components/GameScreens";
+import type { MissionResult } from "@/game/mission";
 
 const RESOURCE_META: Array<{ key: ResourceKey; label: string; unit: string; tone: "amber" | "cyan" }> = [
   { key: "energy", label: "Energía", unit: "kWh", tone: "amber" },
@@ -48,6 +50,9 @@ export default function GameCanvas() {
   const [notice, setNotice] = useState("Bitácora inicial cargada. La base está en estado operativo.");
   const [scienceOpen, setScienceOpen] = useState(false);
   const [telemetry, setTelemetry] = useState<TelemetryStore | null>(null);
+  const [screen, setScreen] = useState<"title" | "sectors" | "briefing" | "playing" | "paused" | "result" | "base">("title");
+  const [selectedSector, setSelectedSector] = useState<MapId>("tranquility");
+  const [lastResult, setLastResult] = useState<MissionResult | null>(null);
 
   stateRef.current = state;
   const freeNodes = useMemo(() => BUILD_NODES.filter((node) => !state.buildings.some((building) => building.nodeId === node.id)), [state.buildings]);
@@ -91,6 +96,9 @@ export default function GameCanvas() {
 
       if (!success) {
         commit(outcome.state, `Exploración interrumpida en ${map.name}. No se transfirió carga.`);
+        setLastResult(result);
+        setScreen("result");
+        handleRef.current?.setPaused(true);
         return;
       }
 
@@ -98,6 +106,9 @@ export default function GameCanvas() {
       const cargo = outcome.reward ? ` +${outcome.reward.regolith} regolito, +${outcome.reward.data} datos.` : "";
       const unlock = report.newUnlock ? ` Nuevo sector desbloqueado: ${report.newUnlock}.` : "";
       commit(outcome.state, `Misión cumplida en ${map.name}.${cargo}${unlock}`);
+      setLastResult(result);
+      setScreen("result");
+      handleRef.current?.setPaused(true);
     });
 
     return () => handle.setMissionCompleteHandler(null);
@@ -126,6 +137,41 @@ export default function GameCanvas() {
   const activeCampaign = state.activeCampaignId ? getCampaign(state.activeCampaignId) : null;
   const activeMilestone = activeCampaign ? campaignProgressFor(state, activeCampaign.id).find((milestone) => !milestone.complete) : null;
 
+
+  useEffect(() => {
+    if (screen !== "playing") return;
+    const onKey = (event: KeyboardEvent) => {
+      if (event.code !== "Escape") return;
+      event.preventDefault();
+      handleRef.current?.setPaused(true);
+      setScreen("paused");
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [screen]);
+
+  const launchMission = () => {
+    handleRef.current?.setPaused(false);
+    handleRef.current?.startMission(selectedSector);
+    setScreen("playing");
+  };
+
+  const resumeMission = () => {
+    handleRef.current?.setPaused(false);
+    setScreen("playing");
+  };
+
+  const restartMission = () => {
+    handleRef.current?.restartMission();
+    handleRef.current?.setPaused(false);
+    setScreen("playing");
+  };
+
+  const exitToBase = () => {
+    handleRef.current?.showBase();
+    handleRef.current?.setPaused(false);
+    setScreen("base");
+  };
   const build = (kind: BuildingKind) => {
     const nodeId = freeNodes.some((node) => node.id === selectedNode) ? selectedNode : freeNodes[0]?.id;
     if (!nodeId) { setNotice("Todos los nodos disponibles están ocupados. Amplía la base en otro sector."); return; }
@@ -199,7 +245,7 @@ export default function GameCanvas() {
       <section className="tycoon-hud" aria-live="polite">
         <header className="tycoon-header">
           <div className="base-brand"><img src={ASSET_URLS.logo} alt="Emblema orbital de Lunar Science Base" /><div><p>Consorcio científico lunar · Sector 01 {isDemo && <em className="demo-badge">Modo demo</em>}</p><h1>Lunar Science <span>Base</span></h1></div></div>
-          <div className="cycle-block"><span>Ciclo operativo</span><strong>{String(state.cycle).padStart(3, "0")}</strong><div><button type="button" className="science-trigger" onClick={() => setScienceOpen(true)}>Archivo científico</button><button type="button" onClick={runCycle}>Cerrar ciclo <b>↗</b></button></div></div>
+          <div className="cycle-block"><span>Ciclo operativo</span><strong>{String(state.cycle).padStart(3, "0")}</strong><div><button type="button" className="science-trigger" onClick={() => setScienceOpen(true)}>Archivo científico</button><button type="button" className="science-trigger" onClick={() => setScreen("sectors")}>Elegir sector</button><button type="button" onClick={runCycle}>Cerrar ciclo <b>↗</b></button></div></div>
         </header>
 
         <section className="resource-strip" aria-label="Recursos de la base">
@@ -236,13 +282,37 @@ export default function GameCanvas() {
         <footer className="base-log"><span>Bitácora de mando</span><p>{notice}</p><div className="expedition-line"><span>Rover de prospección</span><b>{activeExpedition ? `En ruta · ${activeExpedition.secondsRemaining} ciclos` : state.expeditions[0].state === "complete" ? "Regresó con carga" : `Listo · ${expeditionRewardLabel(state.expeditions[0].reward)}`}</b><button type="button" disabled={Boolean(activeExpedition)} onClick={launchExpedition}>{activeExpedition ? "Explorando" : "Lanzar exploración"} <i>↗</i></button></div><b>Arrastra la vista para inspeccionar los nodos · la simulación sólo avanza al cerrar un ciclo.</b></footer>
       </section>
       <ScienceArchive state={state} open={scienceOpen} onClose={() => setScienceOpen(false)} onResearch={research} onStartCampaign={launchCampaign} />
-      {telemetry && (
+      {telemetry && (screen === "playing" || screen === "paused") && (
         <MissionHud
           store={telemetry}
           onStart={() => handleRef.current?.startMission(state.sector)}
           onRestart={() => handleRef.current?.restartMission()}
           onExit={() => handleRef.current?.showBase()}
         />
+      )}
+
+      {screen === "title" && <TitleScreen onStart={() => setScreen("sectors")} />}
+
+      {screen === "sectors" && (
+        <SectorSelect
+          onSelect={(id) => {
+            setSelectedSector(id);
+            setScreen("briefing");
+          }}
+        />
+      )}
+
+      {screen === "briefing" && (
+        <Briefing
+          map={MISSION_MAPS.find((candidate) => candidate.id === selectedSector) ?? MISSION_MAPS[0]}
+          onLaunch={launchMission}
+        />
+      )}
+
+      {screen === "paused" && <PausePanel onResume={resumeMission} onRestart={restartMission} onExit={exitToBase} />}
+
+      {screen === "result" && lastResult && (
+        <ResultPanel result={lastResult} onRetry={restartMission} onBase={exitToBase} />
       )}
     </main>
   );

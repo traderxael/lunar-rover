@@ -18,6 +18,7 @@ export type GameHandle = {
   restartMission: () => void;
   telemetry: TelemetryStore;
   setMissionCompleteHandler: (handler: ((result: MissionResult, success: boolean, missionId: string) => void) | null) => void;
+  setPaused: (paused: boolean) => void;
   dispose: () => void;
 };
 
@@ -111,6 +112,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   let missionElapsed = 0;
   let missionCounter = 0;
   let resultDelivered = false;
+  let paused = false;
   const missionComplete: { handler: ((result: MissionResult, success: boolean, missionId: string) => void) | null } = { handler: null };
 
   const cameraTarget = new THREE.Vector3();
@@ -311,6 +313,10 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
 
   renderer.setAnimationLoop(() => {
     const delta = Math.min(clock.getDelta(), 0.05);
+    if (paused) {
+      renderer.render(active.scene, active.camera);
+      return;
+    }
     if (active === baseView) {
       baseWorld.update(delta);
       baseSky.group.position.copy(baseCamera.position);
@@ -363,6 +369,9 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     telemetry,
     setMissionCompleteHandler: (handler) => {
       missionComplete.handler = handler;
+    },
+    setPaused: (value) => {
+      paused = value;
     },
     dispose: () => {
       renderer.setAnimationLoop(null);
