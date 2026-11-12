@@ -73,6 +73,7 @@ function addLights(scene: THREE.Scene) {
 export async function createGameScene(canvas: HTMLCanvasElement, initialState: TycoonState): Promise<GameHandle> {
   const renderer = createRenderer(canvas);
   const input = new InputManager();
+  const demoMode = new URLSearchParams(window.location.search).has("demo");
   const telemetry = new TelemetryStore();
 
   // ---- Escena de base -------------------------------------------------------
@@ -111,6 +112,8 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   let missionState: MissionState = createMissionState(missionMap);
   let missionElapsed = 0;
   let missionCounter = 0;
+  let stuckTimer = 0;
+  let avoidTimer = 0;
   let resultDelivered = false;
   let paused = false;
   const missionComplete: { handler: ((result: MissionResult, success: boolean, missionId: string) => void) | null } = { handler: null };
@@ -174,7 +177,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     missionTerrain = createLunarTerrain(map, missionRegolith);
     missionScene.add(missionTerrain.mesh);
 
-    const obstacles: Obstacle[] = map.rocks.map(([x, z, size]) => ({ x, z, radius: size * 0.72 }));
+    const obstacles: Obstacle[] = map.rocks.map(([x, z, size]) => ({ x, z, radius: size * 0.6 }));
     missionRover = createRover(map, new THREE.Vector3(map.start.x, 0, map.start.z), obstacles);
     missionScene.add(missionRover.object);
 
@@ -259,9 +262,49 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   const clock = new THREE.Clock();
 
   const stepMissionFrame = (delta: number) => {
+
+    // Piloto automatico del modo demo: conduce hacia la muestra mas cercana.
+    const autopilotActions = () => {
+      if (!missionRover) return { throttle: 0, steer: 0, boost: false, reset: false };
+      const remaining = missionState.samples.filter((sample) => !sample.collected);
+      if (!remaining.length) return { throttle: 0, steer: 0, boost: false, reset: false };
+      let best = remaining[0];
+      let bestDistance = Number.POSITIVE_INFINITY;
+      remaining.forEach((sample) => {
+        const distance = Math.hypot(sample.x - missionRover!.position.x, sample.z - missionRover!.position.z);
+        if (distance < bestDistance) {
+          bestDistance = distance;
+          best = sample;
+        }
+      });
+      const desired = Math.atan2(best.x - missionRover.position.x, best.z - missionRover.position.z);
+      let difference = desired - missionRover.object.rotation.y;
+      while (difference > Math.PI) difference -= Math.PI * 2;
+      while (difference < -Math.PI) difference += Math.PI * 2;
+      // Deteccion de bloqueo: si el rover no avanza con el acelerador pisado,
+      // da marcha atras y gira para salir del obstaculo.
+      if (avoidTimer > 0) {
+        avoidTimer -= delta;
+        return { throttle: -1, steer: difference >= 0 ? 1 : -1, boost: false, reset: false };
+      }
+      if (Math.abs(missionRover.speed) < 0.5) stuckTimer += delta;
+      else stuckTimer = 0;
+      if (stuckTimer > 0.7) {
+        stuckTimer = 0;
+        avoidTimer = 1.6;
+        return { throttle: -1, steer: difference >= 0 ? 1 : -1, boost: false, reset: false };
+      }
+      return {
+        throttle: Math.abs(difference) > 2.4 ? 0.45 : 1,
+        steer: Math.max(-1, Math.min(1, difference * 2.4)),
+        boost: false,
+        reset: false,
+      };
+    };
+
     if (!missionRover || !missionView) return;
 
-    const actions = input.read();
+    const actions = demoMode ? autopilotActions() : input.read();
 
     if (actions.reset) {
       missionState = createMissionState(missionMap);
