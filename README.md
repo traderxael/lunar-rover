@@ -20,6 +20,10 @@ Un juego de navegador, sin instalación y sin backend. Dos capas:
 - **La base**: con lo que traes construyes módulos, investigas tecnologías, diriges
   campañas científicas y desbloqueas sectores nuevos.
 
+### Jugar en línea
+
+[Abrir Lunar Rover Expedition](https://traderxael.github.io/lunar-rover/)
+
 ### Cómo ejecutarlo
 
 Requisitos: Node.js 20 o superior y pnpm 10.
@@ -97,6 +101,10 @@ A browser game, no install and no backend. Two layers:
   craters and dust storms, and return before your energy runs out.
 - **The base**: what you bring back funds modules, research, science campaigns and new
   sectors.
+
+### Play online
+
+[Open Lunar Rover Expedition](https://traderxael.github.io/lunar-rover/)
 
 ### Running it
 
