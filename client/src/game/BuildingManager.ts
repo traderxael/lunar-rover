@@ -1,3 +1,4 @@
+import { ASSET_URLS } from "./assets";
 import type { BaseBuilding, BuildingKind, ResourceKey, Resources, TycoonState } from "./TycoonState";
 
 export type BuildingDefinition = {
@@ -13,11 +14,11 @@ export type BuildingDefinition = {
 };
 
 export const BUILDINGS: BuildingDefinition[] = [
-  { kind: "solar", name: "Campo solar", shortName: "Solar", description: "Genera energía estable durante el ciclo lunar.", cost: { regolith: 10 }, limit: 4, image: "/media/module-solar.svg", accent: "amber" },
-  { kind: "habitat", name: "Hábitat presurizado", shortName: "Hábitat", description: "Amplía soporte vital y capacidad de tripulación.", cost: { regolith: 14, energy: 8 }, limit: 3, image: "/media/module-habitat.svg", accent: "cyan" },
-  { kind: "laboratory", name: "Laboratorio geológico", shortName: "Laboratorio", description: "Convierte muestras y tiempo de ciencia en datos de investigación.", cost: { regolith: 18, energy: 12 }, limit: 3, image: "/media/module-laboratory.svg", accent: "cyan" },
-  { kind: "extractor", name: "Extractora de regolito", shortName: "Extractora", description: "Procesa regolito local a costa de energía de red.", cost: { regolith: 10, energy: 9 }, limit: 3, image: "/media/module-extractor.svg", accent: "amber" },
-  { kind: "antenna", name: "Antena de largo alcance", shortName: "Antena", description: "Mejora comunicaciones y abre proyectos de cooperación.", cost: { regolith: 8, energy: 6 }, limit: 2, image: "/media/module-antenna.svg", accent: "cyan" },
+  { kind: "solar", name: "Campo solar", shortName: "Solar", description: "Genera energía estable durante el ciclo lunar.", cost: { regolith: 10 }, limit: 4, image: ASSET_URLS.solar, accent: "amber" },
+  { kind: "habitat", name: "Hábitat presurizado", shortName: "Hábitat", description: "Amplía soporte vital y capacidad de tripulación.", cost: { regolith: 14, energy: 8 }, limit: 3, image: ASSET_URLS.habitat, accent: "cyan" },
+  { kind: "laboratory", name: "Laboratorio geológico", shortName: "Laboratorio", description: "Convierte muestras y tiempo de ciencia en datos de investigación.", cost: { regolith: 18, energy: 12 }, limit: 3, image: ASSET_URLS.laboratory, accent: "cyan" },
+  { kind: "extractor", name: "Extractora de regolito", shortName: "Extractora", description: "Procesa regolito local a costa de energía de red.", cost: { regolith: 10, energy: 9 }, limit: 3, image: ASSET_URLS.extractor, accent: "amber" },
+  { kind: "antenna", name: "Antena de largo alcance", shortName: "Antena", description: "Mejora comunicaciones y abre proyectos de cooperación.", cost: { regolith: 8, energy: 6 }, limit: 2, image: ASSET_URLS.antenna, accent: "cyan" },
 ];
 
 export function getBuildingDefinition(kind: BuildingKind) {
