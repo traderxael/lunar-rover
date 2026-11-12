@@ -3,7 +3,7 @@
  * de la bitácora lunar; las reglas son puras y ajenas a React/Babylon.
  */
 import { buildingCount } from "./BuildingManager";
-import type { CampaignId, CampaignMetrics, CampaignProgress, ResourceKey, TycoonState } from "./TycoonState";
+import type { CampaignId, CampaignMetrics, ResourceKey, TycoonState } from "./TycoonState";
 
 type MilestoneDefinition = {
   id: string;
