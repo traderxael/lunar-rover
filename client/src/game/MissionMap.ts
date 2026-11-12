@@ -1,4 +1,4 @@
-import { Vector3 } from "@babylonjs/core/Maths/math.vector";
+import { Vector3 } from "three";
 import { getProgress, isMapUnlocked, type MapId } from "./Progression";
 
 export type Crater = { x: number; z: number; radius: number; depth: number; deep?: boolean };

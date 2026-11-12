@@ -1,4 +1,4 @@
-/** Semantic input actions shared by keyboard and touch controls. */
+/** Acciones semánticas compartidas por teclado y controles táctiles. */
 export type GameActions = {
   throttle: number;
   steer: number;
@@ -21,6 +21,10 @@ const KEY_BINDINGS: Record<string, KeyAction> = {
   KeyR: "reset",
 };
 
+/**
+ * Traduce teclado y botones táctiles a acciones. `read()` consume los toques
+ * discretos (impulso, reinicio) y expone el estado continuo de dirección.
+ */
 export class InputManager {
   private held = new Set<KeyAction>();
   private tapped = new Set<KeyAction>();
@@ -41,14 +45,14 @@ export class InputManager {
     this.held.delete(action);
   };
 
-  constructor() {
+  constructor(private readonly root: ParentNode = document) {
     window.addEventListener("keydown", this.onKeyDown, { passive: false });
     window.addEventListener("keyup", this.onKeyUp, { passive: false });
     this.attachTouchControls();
   }
 
   private attachTouchControls() {
-    document.querySelectorAll<HTMLElement>("[data-game-action]").forEach((button) => {
+    this.root.querySelectorAll<HTMLElement>("[data-game-action]").forEach((button) => {
       const action = button.dataset.gameAction as KeyAction | undefined;
       if (!action) return;
 
@@ -62,10 +66,9 @@ export class InputManager {
         this.held.delete(action);
       };
 
-      button.addEventListener("pointerdown", start);
-      button.addEventListener("pointerup", end);
-      button.addEventListener("pointerleave", end);
-      button.addEventListener("pointercancel", end);
+      const events: Array<keyof HTMLElementEventMap> = ["pointerdown", "pointerup", "pointerleave", "pointercancel"];
+      events.forEach((name) => button.addEventListener(name, name === "pointerdown" ? start : end));
+
       this.touchCleanup.push(() => {
         button.removeEventListener("pointerdown", start);
         button.removeEventListener("pointerup", end);
@@ -76,14 +79,14 @@ export class InputManager {
   }
 
   read(): GameActions {
-    const actionState = {
+    const actions: GameActions = {
       throttle: (this.held.has("forward") ? 1 : 0) - (this.held.has("backward") ? 1 : 0),
       steer: (this.held.has("right") ? 1 : 0) - (this.held.has("left") ? 1 : 0),
       boost: this.tapped.has("boost"),
       reset: this.tapped.has("reset"),
     };
     this.tapped.clear();
-    return actionState;
+    return actions;
   }
 
   dispose() {
@@ -95,4 +98,3 @@ export class InputManager {
     this.tapped.clear();
   }
 }
-

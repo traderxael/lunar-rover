@@ -58,7 +58,7 @@ React, separada del motor de render.
 |---|---|---|
 | Interfaz | `components/`, `pages/` | Pantallas, HUD y controles. |
 | Reglas | `TycoonState`, `EconomyManager`, `BuildingManager`, `ResearchManager`, `CampaignManager`, `DiscoveryManager`, `ExpeditionManager`, `SectorManager`, `Progression`, `DemoManager` | Estado serializable, economía, construcción, investigación, campañas, bitácora y progresión. Sin dependencias del motor. |
-| Render | `game/scene.ts`, `game/BaseWorld.ts`, `game/terrain.ts`, `game/DustStorm.ts` | Escena 3D actual, sobre Babylon.js. |
+| Render | `three/engine.ts`, `three/base.ts`, `three/terrain.ts`, `three/sky.ts`, `three/models.ts`, `three/input.ts` | Escena 3D sobre Three.js: renderer, terreno, cielo, modelos y entrada. |
 
 La persistencia vive en `localStorage` con estado versionado y migración no destructiva
 (`lunar-science-base-tycoon-v1`).
@@ -73,7 +73,6 @@ La persistencia vive en `localStorage` con estado versionado y migración no des
 
 ### Roadmap
 
-- [ ] Migrar la capa de render de Babylon.js a Three.js.
 - [ ] Volver a conectar la misión de superficie con la base.
 - [ ] Modelos y texturas propios en el repositorio.
 
@@ -126,7 +125,7 @@ separated from the render engine.
 |---|---|---|
 | Interface | `components/`, `pages/` | Screens, HUD and controls. |
 | Rules | `TycoonState`, `EconomyManager`, `BuildingManager`, `ResearchManager`, `CampaignManager`, `DiscoveryManager`, `ExpeditionManager`, `SectorManager`, `Progression`, `DemoManager` | Serializable state, economy, building, research, campaigns, discovery log and progression. No engine dependency. |
-| Render | `game/scene.ts`, `game/BaseWorld.ts`, `game/terrain.ts`, `game/DustStorm.ts` | Current 3D scene, on Babylon.js. |
+| Render | `three/engine.ts`, `three/base.ts`, `three/terrain.ts`, `three/sky.ts`, `three/models.ts`, `three/input.ts` | 3D scene on Three.js: renderer, terrain, sky, models and input. |
 
 Persistence lives in `localStorage` with versioned state and non-destructive migration
 (`lunar-science-base-tycoon-v1`).

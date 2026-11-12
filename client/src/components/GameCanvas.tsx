@@ -3,10 +3,9 @@
  * reglito mineral, control de recursos y ámbar/cian de función operacional.
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { Engine } from "@babylonjs/core/Engines/engine";
-import { createGameScene, type GameHandle } from "@/game/scene";
+import { createGameScene, type GameHandle } from "@/three/engine";
 import { ASSET_URLS } from "@/game/assets";
-import { BUILD_NODES } from "@/game/BaseWorld";
+import { BUILD_NODES } from "@/three/base";
 import { BUILDINGS, constructBuilding, repairBuilding, type BuildingDefinition } from "@/game/BuildingManager";
 import { advanceEconomy, resourceRate } from "@/game/EconomyManager";
 import { loadTycoonState, saveTycoonState, type BuildingKind, type ResourceKey, type TycoonState } from "@/game/TycoonState";
@@ -59,17 +58,15 @@ export default function GameCanvas() {
     const canvas = canvasRef.current;
     if (!canvas || startedRef.current) return;
     startedRef.current = true;
-    const engine = new Engine(canvas, true, { preserveDrawingBuffer: true, stencil: true, adaptToDeviceRatio: true });
+    let handle: GameHandle | null = null;
     let disposed = false;
-    createGameScene(engine, canvas, stateRef.current ?? loadTycoonState()).then((game) => {
+    void createGameScene(canvas, stateRef.current ?? loadTycoonState()).then((game) => {
       if (disposed) { game.dispose(); return; }
+      handle = game;
       handleRef.current = game;
       game.syncTycoonState(stateRef.current ?? loadTycoonState());
-      engine.runRenderLoop(() => game.scene.render());
     });
-    const onResize = () => engine.resize();
-    window.addEventListener("resize", onResize);
-    return () => { disposed = true; window.removeEventListener("resize", onResize); handleRef.current?.dispose(); handleRef.current = null; engine.dispose(); startedRef.current = false; };
+    return () => { disposed = true; handle?.dispose(); handleRef.current = null; startedRef.current = false; };
   }, []);
 
   useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
