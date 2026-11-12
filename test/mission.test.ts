@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { MISSION_MAPS } from "@/game/MissionMap";
-import { createMissionState, missionResult, startMission, stepMission, type MissionState } from "@/game/mission";
+import { createMissionState, missionResult, resolveObstacles, startMission, stepMission, type MissionState } from "@/game/mission";
 
 const map = MISSION_MAPS[0];
 const idle = { delta: 1 / 60, x: 0, z: 0, distance: 0, boosted: false, inDeepCrater: false };
@@ -104,5 +104,25 @@ describe("stepMission", () => {
     expect(result.sector).toBe("tranquility");
     expect(result.energy).toBeCloseTo(97, 5);
     expect(result.collected).toBe(0);
+  });
+});
+describe("resolveObstacles", () => {
+  it("deja pasar cuando no hay roca cerca", () => {
+    const result = resolveObstacles(0, 0, 1.6, [{ x: 20, z: 0, radius: 2 }]);
+    expect(result.hit).toBe(false);
+    expect(result.x).toBe(0);
+    expect(result.z).toBe(0);
+  });
+
+  it("empuja al rover fuera del radio de la roca", () => {
+    const result = resolveObstacles(0, 0, 1.6, [{ x: 1, z: 0, radius: 2 }]);
+    expect(result.hit).toBe(true);
+    expect(result.x).toBeCloseTo(-2.6, 5);
+  });
+
+  it("resuelve un rover perfectamente centrado en la roca", () => {
+    const result = resolveObstacles(5, 5, 1.6, [{ x: 5, z: 5, radius: 2 }]);
+    expect(result.hit).toBe(true);
+    expect(Math.hypot(result.x - 5, result.z - 5)).toBeCloseTo(3.6, 5);
   });
 });

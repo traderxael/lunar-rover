@@ -1,6 +1,7 @@
 import * as THREE from "three";
 import type { MissionMap } from "@/game/MissionMap";
 import type { GameActions } from "./input";
+import { resolveObstacles, type Obstacle } from "@/game/mission";
 import { terrainHeight } from "./terrain";
 
 /**
@@ -19,6 +20,7 @@ const BOOST_ACCELERATION = 5.1;
 const BOOST_CEILING = 3.4;
 const CLEARANCE = 0.83;
 const WHEEL_RADIUS = 0.44;
+const ROVER_RADIUS = 1.6;
 
 export type Rover = {
   object: THREE.Group;
@@ -30,7 +32,7 @@ export type Rover = {
   dispose: () => void;
 };
 
-export function createRover(map: MissionMap, start: THREE.Vector3): Rover {
+export function createRover(map: MissionMap, start: THREE.Vector3, obstacles: Obstacle[] = []): Rover {
   const root = new THREE.Group();
   root.name = "rover";
 
@@ -227,6 +229,13 @@ export function createRover(map: MissionMap, start: THREE.Vector3): Rover {
 
       root.position.x += forwardX * distance;
       root.position.z += forwardZ * distance;
+
+      const resolved = resolveObstacles(root.position.x, root.position.z, ROVER_RADIUS, obstacles);
+      if (resolved.hit) {
+        root.position.x = resolved.x;
+        root.position.z = resolved.z;
+        speed *= 0.35;
+      }
 
       const edge = 67;
       if (Math.abs(root.position.x) > edge || Math.abs(root.position.z) > edge) {

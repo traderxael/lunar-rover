@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { MISSION_MAPS, type MissionMap } from "@/game/MissionMap";
 import type { TycoonState } from "@/game/TycoonState";
 import { ASSET_URLS } from "@/game/assets";
-import { createMissionState, startMission, stepMission, type MissionState } from "@/game/mission";
+import { createMissionState, startMission, stepMission, type MissionState, type Obstacle } from "@/game/mission";
 import { TelemetryStore } from "@/game/telemetry";
 import { BaseWorld } from "./base";
 import { InputManager } from "./input";
@@ -165,7 +165,8 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     missionTerrain = createLunarTerrain(map, missionRegolith);
     missionScene.add(missionTerrain.mesh);
 
-    missionRover = createRover(map, new THREE.Vector3(map.start.x, 0, map.start.z));
+    const obstacles: Obstacle[] = map.rocks.map(([x, z, size]) => ({ x, z, radius: size * 0.72 }));
+    missionRover = createRover(map, new THREE.Vector3(map.start.x, 0, map.start.z), obstacles);
     missionScene.add(missionRover.object);
 
     missionView = createMissionView(map);

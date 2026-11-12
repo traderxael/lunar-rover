@@ -40,6 +40,21 @@ export function createLunarTerrain(map: MissionMap, regolith: THREE.Texture | nu
     position.setY(index, terrainHeight(map, position.getX(index), position.getZ(index)));
   }
   position.needsUpdate = true;
+  // Variacion de color por vertice: el regolito real no es plano y el
+  // placeholder tampoco debe aplanarlo. Se deriva del ruido de altura.
+  const colors = new Float32Array(position.count * 3);
+  for (let index = 0; index < position.count; index += 1) {
+    const x = position.getX(index);
+    const z = position.getZ(index);
+    const y = position.getY(index);
+    const grain = Math.sin(x * 1.7) * Math.cos(z * 1.3) * 0.5 + Math.sin((x + z) * 0.6) * 0.5;
+    const shade = 0.86 + grain * 0.07 + Math.max(-0.12, Math.min(0.12, y * 0.03));
+    colors[index * 3] = shade;
+    colors[index * 3 + 1] = shade;
+    colors[index * 3 + 2] = shade * 0.99;
+  }
+  geometry.setAttribute("color", new THREE.BufferAttribute(colors, 3));
+
   geometry.computeVertexNormals();
   geometry.computeBoundingSphere();
 
@@ -48,6 +63,7 @@ export function createLunarTerrain(map: MissionMap, regolith: THREE.Texture | nu
     roughness: 0.97,
     metalness: 0.02,
     map: regolith ?? null,
+    vertexColors: true,
   });
 
   const mesh = new THREE.Mesh(geometry, material);

@@ -150,3 +150,32 @@ export function missionResult(state: MissionState): MissionResult {
     optionalTotal: state.optionalTotal,
   };
 }
+export type Obstacle = { x: number; z: number; radius: number };
+
+/**
+ * Colisión circular en el plano. Empuja al rover fuera de la roca en lugar de
+ * detenerlo en seco: la inercia lunar se siente mejor si el impacto desvía y
+ * frena un poco, no si clava el vehículo.
+ */
+export function resolveObstacles(x: number, z: number, radius: number, obstacles: Obstacle[]) {
+  let nextX = x;
+  let nextZ = z;
+  let hit = false;
+
+  for (const obstacle of obstacles) {
+    const dx = nextX - obstacle.x;
+    const dz = nextZ - obstacle.z;
+    const minDistance = radius + obstacle.radius;
+    const distance = Math.hypot(dx, dz);
+
+    if (distance >= minDistance) continue;
+
+    const nx = distance === 0 ? 1 : dx / distance;
+    const nz = distance === 0 ? 0 : dz / distance;
+    nextX = obstacle.x + nx * minDistance;
+    nextZ = obstacle.z + nz * minDistance;
+    hit = true;
+  }
+
+  return { x: nextX, z: nextZ, hit };
+}
