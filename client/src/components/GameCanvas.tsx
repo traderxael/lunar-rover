@@ -19,6 +19,9 @@ import { advanceDemoStep, createDemoTycoonState } from "@/game/DemoManager";
 import { campaignProgressFor, evaluateCampaignProgress, getCampaign, startCampaign } from "@/game/CampaignManager";
 import { recordDiscoveries, recordDiscovery, type DiscoveryDraft } from "@/game/DiscoveryManager";
 import { RESEARCH_NODES } from "@/game/ResearchManager";
+import { MISSION_MAPS } from "@/game/MissionMap";
+import { applyMissionResult } from "@/game/missionReward";
+import { recordMission } from "@/game/Progression";
 
 const RESOURCE_META: Array<{ key: ResourceKey; label: string; unit: string; tone: "amber" | "cyan" }> = [
   { key: "energy", label: "Energía", unit: "kWh", tone: "amber" },
@@ -74,6 +77,31 @@ export default function GameCanvas() {
   }, []);
 
   useEffect(() => { handleRef.current?.syncTycoonState(state); }, [state]);
+  // La misión acredita su resultado en la base una sola vez. El motor avisa
+  // cuando el estado pasa a éxito o agotamiento; esta guarda es la que evita
+  // pagar dos veces si el efecto se vuelve a montar.
+  useEffect(() => {
+    const handle = handleRef.current;
+    if (!telemetry || !handle) return;
+
+    handle.setMissionCompleteHandler((result, success, missionId) => {
+      const map = MISSION_MAPS.find((candidate) => candidate.id === result.sector) ?? MISSION_MAPS[0];
+      const outcome = applyMissionResult(stateRef.current ?? loadTycoonState(), result, map, { success, missionId });
+      if (!outcome.discovered) return;
+
+      if (!success) {
+        commit(outcome.state, `Exploración interrumpida en ${map.name}. No se transfirió carga.`);
+        return;
+      }
+
+      const report = recordMission(result.sector, map.name, result.elapsed, result.energy, result.optionalCollected, result.optionalTotal);
+      const cargo = outcome.reward ? ` +${outcome.reward.regolith} regolito, +${outcome.reward.data} datos.` : "";
+      const unlock = report.newUnlock ? ` Nuevo sector desbloqueado: ${report.newUnlock}.` : "";
+      commit(outcome.state, `Misión cumplida en ${map.name}.${cargo}${unlock}`);
+    });
+
+    return () => handle.setMissionCompleteHandler(null);
+  }, [telemetry, commit]);
 
   useEffect(() => {
     if (state.version === 3 && state.campaigns && state.campaignMetrics && state.campaignBonuses && state.discoveries) return;

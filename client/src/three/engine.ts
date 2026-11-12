@@ -2,7 +2,7 @@ import * as THREE from "three";
 import { MISSION_MAPS, type MissionMap } from "@/game/MissionMap";
 import type { TycoonState } from "@/game/TycoonState";
 import { ASSET_URLS } from "@/game/assets";
-import { createMissionState, startMission, stepMission, type MissionState, type Obstacle } from "@/game/mission";
+import { createMissionState, missionResult, startMission, stepMission, type MissionResult, type MissionState, type Obstacle } from "@/game/mission";
 import { TelemetryStore } from "@/game/telemetry";
 import { BaseWorld } from "./base";
 import { InputManager } from "./input";
@@ -17,6 +17,7 @@ export type GameHandle = {
   startMission: (sector: TycoonState["sector"]) => void;
   restartMission: () => void;
   telemetry: TelemetryStore;
+  setMissionCompleteHandler: (handler: ((result: MissionResult, success: boolean, missionId: string) => void) | null) => void;
   dispose: () => void;
 };
 
@@ -108,6 +109,9 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   let missionMap: MissionMap = MISSION_MAPS[0];
   let missionState: MissionState = createMissionState(missionMap);
   let missionElapsed = 0;
+  let missionCounter = 0;
+  let resultDelivered = false;
+  const missionComplete: { handler: ((result: MissionResult, success: boolean, missionId: string) => void) | null } = { handler: null };
 
   const cameraTarget = new THREE.Vector3();
   const desiredCamera = new THREE.Vector3();
@@ -162,6 +166,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     missionMap = map;
     missionState = createMissionState(map);
     missionElapsed = 0;
+    resultDelivered = false;
 
     missionRegolith = createRegolithTexture(map.terrainTexture === "deepCraterRegolith" ? ASSET_URLS.deepCraterRegolith : ASSET_URLS.regolith);
     missionTerrain = createLunarTerrain(map, missionRegolith);
@@ -272,6 +277,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     const inDeepCrater = Boolean(deepCraterAt(missionMap, missionRover.position.x, missionRover.position.z));
     if (inDeepCrater) missionRover.applyDrag(1 - 1.6 * delta);
 
+    const previousStatus = missionState.status;
     missionState = stepMission(
       missionState,
       {
@@ -286,6 +292,17 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     );
 
     missionElapsed += delta;
+
+    if (missionState.status !== previousStatus && (missionState.status === "success" || missionState.status === "depleted") && !resultDelivered) {
+      resultDelivered = true;
+      missionCounter += 1;
+      const missionId = `${missionMap.id}-${missionCounter}`;
+      const result = missionResult(missionState);
+      telemetry.set({ status: missionState.status });
+      if (missionComplete.handler) {
+        missionComplete.handler(result, missionState.status === "success", missionId);
+      }
+    }
     missionView.sync(missionState.samples, missionElapsed);
     missionView.update(delta, missionElapsed);
     updateChaseCamera(delta);
@@ -344,6 +361,9 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
       updateChaseCamera(1, true);
     },
     telemetry,
+    setMissionCompleteHandler: (handler) => {
+      missionComplete.handler = handler;
+    },
     dispose: () => {
       renderer.setAnimationLoop(null);
       window.removeEventListener("resize", resize);
