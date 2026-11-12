@@ -7,8 +7,6 @@ import { StandardMaterial } from "@babylonjs/core/Materials/standardMaterial";
 import { Texture } from "@babylonjs/core/Materials/Textures/texture";
 import { PointLight } from "@babylonjs/core/Lights/pointLight";
 import { TransformNode } from "@babylonjs/core/Meshes/transformNode";
-import { SceneLoader } from "@babylonjs/core/Loading/sceneLoader";
-import "@babylonjs/loaders/glTF";
 import type { Scene } from "@babylonjs/core/scene";
 import type { BaseBuilding, BuildingKind, TycoonState } from "./TycoonState";
 import { createLunarTerrain, terrainHeight } from "./terrain";
@@ -33,10 +31,8 @@ export class BaseWorld {
   private readonly rotorMeshes: AbstractMesh[] = [];
   private readonly materials: Record<string, StandardMaterial>;
   private readonly roverLights: PointLight[] = [];
-  private readonly glbRoverMeshes: AbstractMesh[] = [];
   private elapsed = 0;
   private roverRoot: TransformNode | null = null;
-  private glbRoverRoot: TransformNode | null = null;
   private roverDish: AbstractMesh | null = null;
   private disposed = false;
   private roverOrigin = new Vector3(-23, 0, -15);
@@ -51,7 +47,6 @@ export class BaseWorld {
     this.createBuildNodes();
     this.createSurfaceDetails();
     this.createLandingRover();
-    void this.loadGeneratedRover();
     this.sync(state);
   }
 
@@ -68,7 +63,6 @@ export class BaseWorld {
       });
       this.roverOrigin = new Vector3(-23, terrainHeight(this.activeMap, -23, -15) + 0.82, -15);
       if (this.roverRoot) this.roverRoot.position.copyFrom(this.roverOrigin);
-      if (this.glbRoverRoot) this.glbRoverRoot.position.copyFrom(this.roverOrigin);
     }
     this.state = state;
     this.roots.forEach((meshes) => meshes.forEach((mesh) => mesh.dispose()));
@@ -91,15 +85,12 @@ export class BaseWorld {
       mesh.scaling.z = pulse;
     });
     this.rotorMeshes.forEach((mesh, index) => { mesh.rotation.y += delta * (index % 2 ? -1.3 : 0.9); });
-    if (this.roverRoot || this.glbRoverRoot) {
+    if (this.roverRoot) {
       const offset = this.roverOnExpedition ? new Vector3(Math.sin(this.elapsed * 1.1) * 10, 0, Math.cos(this.elapsed * 1.1) * 6) : Vector3.Zero();
-      [this.roverRoot, this.glbRoverRoot].forEach((root) => {
-        if (!root) return;
-        root.position.x = this.roverOrigin.x + offset.x;
-        root.position.z = this.roverOrigin.z + offset.z;
-        root.position.y = terrainHeight(this.activeMap, root.position.x, root.position.z) + 0.82;
-        root.rotation.y = 0.24 + Math.sin(this.elapsed * 0.42) * 0.04;
-      });
+      this.roverRoot.position.x = this.roverOrigin.x + offset.x;
+      this.roverRoot.position.z = this.roverOrigin.z + offset.z;
+      this.roverRoot.position.y = terrainHeight(this.activeMap, this.roverRoot.position.x, this.roverRoot.position.z) + 0.82;
+      this.roverRoot.rotation.y = 0.24 + Math.sin(this.elapsed * 0.42) * 0.04;
     }
     if (this.roverDish) this.roverDish.rotation.y = Math.sin(this.elapsed * 0.55) * 0.22;
   }
@@ -112,35 +103,6 @@ export class BaseWorld {
     this.terrain?.dispose();
     this.roverLights.forEach((light) => light.dispose());
     this.roverRoot?.dispose();
-    this.glbRoverMeshes.forEach((mesh) => mesh.dispose());
-    this.glbRoverRoot?.dispose();
-  }
-
-  private async loadGeneratedRover() {
-    try {
-      const result = await SceneLoader.ImportMeshAsync("", ASSET_URLS.roverModel, "", this.scene);
-      if (this.disposed) {
-        result.meshes.forEach((mesh) => mesh.dispose());
-        return;
-      }
-      if (result.meshes.length < 4) {
-        console.warn("Generated rover GLB has insufficient part separation; keeping the procedural rover visible.");
-        result.meshes.forEach((mesh) => mesh.dispose());
-        return;
-      }
-      const root = new TransformNode("generated-rover-root", this.scene);
-      result.meshes.forEach((mesh) => {
-        this.glbRoverMeshes.push(mesh);
-        if (!mesh.parent) mesh.parent = root;
-      });
-      root.scaling = new Vector3(0.62, 0.62, 0.62);
-      root.position.copyFrom(this.roverOrigin);
-      root.rotation.y = 0.24;
-      this.glbRoverRoot = root;
-      this.roverRoot?.setEnabled(false);
-    } catch (error) {
-      console.warn("Generated rover GLB unavailable; using procedural fallback.", error);
-    }
   }
 
   private createMaterials() {

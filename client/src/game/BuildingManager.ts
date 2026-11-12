@@ -13,11 +13,11 @@ export type BuildingDefinition = {
 };
 
 export const BUILDINGS: BuildingDefinition[] = [
-  { kind: "solar", name: "Campo solar", shortName: "Solar", description: "Genera energía estable durante el ciclo lunar.", cost: { regolith: 10 }, limit: 4, image: "/manus-storage/lunar-solar-array-module_7a5777b1.png", accent: "amber" },
-  { kind: "habitat", name: "Hábitat presurizado", shortName: "Hábitat", description: "Amplía soporte vital y capacidad de tripulación.", cost: { regolith: 14, energy: 8 }, limit: 3, image: "/manus-storage/lunar-habitat-module_15f2dc65.png", accent: "cyan" },
-  { kind: "laboratory", name: "Laboratorio geológico", shortName: "Laboratorio", description: "Convierte muestras y tiempo de ciencia en datos de investigación.", cost: { regolith: 18, energy: 12 }, limit: 3, image: "/manus-storage/lunar-science-laboratory-module_f7492492.png", accent: "cyan" },
-  { kind: "extractor", name: "Extractora de regolito", shortName: "Extractora", description: "Procesa regolito local a costa de energía de red.", cost: { regolith: 10, energy: 9 }, limit: 3, image: "/manus-storage/lunar-regolith-extractor-module_37cb8532.png", accent: "amber" },
-  { kind: "antenna", name: "Antena de largo alcance", shortName: "Antena", description: "Mejora comunicaciones y abre proyectos de cooperación.", cost: { regolith: 8, energy: 6 }, limit: 2, image: "/manus-storage/lunar-rover-mark_4f238dab.png", accent: "cyan" },
+  { kind: "solar", name: "Campo solar", shortName: "Solar", description: "Genera energía estable durante el ciclo lunar.", cost: { regolith: 10 }, limit: 4, image: "/media/module-solar.svg", accent: "amber" },
+  { kind: "habitat", name: "Hábitat presurizado", shortName: "Hábitat", description: "Amplía soporte vital y capacidad de tripulación.", cost: { regolith: 14, energy: 8 }, limit: 3, image: "/media/module-habitat.svg", accent: "cyan" },
+  { kind: "laboratory", name: "Laboratorio geológico", shortName: "Laboratorio", description: "Convierte muestras y tiempo de ciencia en datos de investigación.", cost: { regolith: 18, energy: 12 }, limit: 3, image: "/media/module-laboratory.svg", accent: "cyan" },
+  { kind: "extractor", name: "Extractora de regolito", shortName: "Extractora", description: "Procesa regolito local a costa de energía de red.", cost: { regolith: 10, energy: 9 }, limit: 3, image: "/media/module-extractor.svg", accent: "amber" },
+  { kind: "antenna", name: "Antena de largo alcance", shortName: "Antena", description: "Mejora comunicaciones y abre proyectos de cooperación.", cost: { regolith: 8, energy: 6 }, limit: 2, image: "/media/module-antenna.svg", accent: "cyan" },
 ];
 
 export function getBuildingDefinition(kind: BuildingKind) {

@@ -2,6 +2,35 @@
    horizonte mineral isométrico y ámbar/cian usados como señales operativas. */
 @import "tailwindcss";
 
+/* Tipografías autoalojadas (SIL Open Font License 1.1). Evitan cualquier
+   petición a un tercero y mantienen la identidad visual sin conexión. */
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-400.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Barlow Condensed";
+  font-style: normal;
+  font-weight: 500 700;
+  font-display: swap;
+  src: url("/fonts/barlow-condensed-600.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Space Grotesk";
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url("/fonts/space-grotesk.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+2000-206F, U+20AC, U+2122, U+2212, U+FEFF, U+FFFD;
+}
+
 :root { font-family: "Space Grotesk", system-ui, sans-serif; color: #edf0ea; background: #050912; }
 * { box-sizing: border-box; } html, body, #root { width: 100%; min-width: 320px; min-height: 100%; margin: 0; overflow: hidden; } button { font: inherit; } button:not(:disabled) { cursor: pointer; }
 .tycoon-shell, .tycoon-canvas { position: fixed; inset: 0; width: 100%; height: 100%; }.tycoon-shell { background: radial-gradient(circle at 65% 20%, #152133 0%, #050912 64%); }.tycoon-canvas { display: block; outline: none; }

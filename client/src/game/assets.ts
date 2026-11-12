@@ -1,19 +1,25 @@
 /**
- * Dirección visual: Bitácora de Exploración Analógica.
- * Recursos generados para la misión, alojados fuera del árbol de distribución.
+ * Recursos visuales del juego.
+ *
+ * Todo vive en `client/public/media/`. Ninguna ruta apunta a un host externo:
+ * el repo tiene que funcionar clonado, sin credenciales ni proxy.
+ *
+ * Los archivos marcados como provisionales son marcadores locales que
+ * reemplazan los recursos que antes se servían desde Manus. La fase 5
+ * (dirección visual) los sustituye por modelos y texturas reales, con su
+ * procedencia y licencia documentadas en `ASSETS.md`.
  */
 export const ASSET_URLS = {
-  visualTarget: "/manus-storage/lunar-rover-visual-target_5538c836.png",
-  roverModel: "/manus-storage/lunar-rover-3d_fea7b21a.glb",
-  regolith: "/manus-storage/lunar-regolith-tile_b1cfd882.png",
-  instrumentDecal: "/manus-storage/rover-instrument-decal_a8453884.png",
-  logo: "/manus-storage/lunar-rover-mark_4f238dab.png",
-  dustStorm: "/manus-storage/lunar-dust-storm-particles_949628da.png",
-  deepCraterRegolith: "/manus-storage/deep-crater-regolith-tile_d844fa40.png",
-  baseVisualTarget: "/manus-storage/lunar-scientific-base-tycoon-visual-target_d1e54007.png",
-  habitat: "/manus-storage/lunar-habitat-module_15f2dc65.png",
-  laboratory: "/manus-storage/lunar-science-laboratory-module_f7492492.png",
-  extractor: "/manus-storage/lunar-regolith-extractor-module_37cb8532.png",
-  solar: "/manus-storage/lunar-solar-array-module_7a5777b1.png",
-  campaignSeals: "/manus-storage/lunar-science-campaign-seals_77106e63.png",
+  visualTarget: "/media/visual-target.svg",
+  regolith: "/media/regolith.svg",
+  instrumentDecal: "/media/instrument-decal.svg",
+  logo: "/media/logo.svg",
+  dustStorm: "/media/dust-storm.svg",
+  deepCraterRegolith: "/media/deep-crater-regolith.svg",
+  baseVisualTarget: "/media/base-visual-target.svg",
+  habitat: "/media/module-habitat.svg",
+  laboratory: "/media/module-laboratory.svg",
+  extractor: "/media/module-extractor.svg",
+  solar: "/media/module-solar.svg",
+  campaignSeals: "/media/campaign-seals.svg",
 } as const;
