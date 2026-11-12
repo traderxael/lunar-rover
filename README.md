@@ -71,10 +71,11 @@ La persistencia vive en `localStorage` con estado versionado y migración no des
    componente, va en un manager.
 4. Describe qué verificaste.
 
-### Roadmap
+### Estado del proyecto
 
-- [ ] Volver a conectar la misión de superficie con la base.
-- [ ] Modelos y texturas propios en el repositorio.
+La versión actual incluye misiones de conducción en Three.js, progresión entre
+sectores y gestión de una base científica. El progreso se guarda localmente en
+el navegador; no hay cuentas ni sincronización en la nube.
 
 ### Licencia
 
