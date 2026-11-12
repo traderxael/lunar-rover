@@ -5,7 +5,12 @@ import { defineConfig } from "vite";
 
 const PROJECT_ROOT = import.meta.dirname;
 
+// En GitHub Pages el sitio vive bajo /lunar-rover/, así que el build necesita
+// esa ruta base. En desarrollo y en local se queda en la raíz.
+const basePath = process.env.VITE_BASE_PATH ?? "/";
+
 export default defineConfig({
+  base: basePath,
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {

@@ -1,5 +1,7 @@
 # Lunar Rover Expedition
 
+**[Jugar en el navegador](https://traderxael.github.io/lunar-rover/)**
+
 Juego web 3D de exploración y gestión lunar. Conduces un rover por la superficie,
 recoges muestras científicas, administras la energía y usas lo que traes para levantar y
 investigar una base en la Luna.
