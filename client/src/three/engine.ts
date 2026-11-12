@@ -80,6 +80,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   addLights(baseScene);
 
   const baseSky = createSky();
+  baseSky.earth.position.set(-150, 74, 128);
   baseScene.add(baseSky.group);
 
   const baseCamera = new THREE.PerspectiveCamera(48, 1, 0.5, 500);
@@ -93,6 +94,7 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
   addLights(missionScene);
 
   const missionSky = createSky();
+  missionSky.earth.position.set(118, 52, 104);
   missionScene.add(missionSky.group);
 
   const missionCamera = new THREE.PerspectiveCamera(55, 1, 0.5, 500);
@@ -294,8 +296,10 @@ export async function createGameScene(canvas: HTMLCanvasElement, initialState: T
     const delta = Math.min(clock.getDelta(), 0.05);
     if (active === baseView) {
       baseWorld.update(delta);
+      baseSky.group.position.copy(baseCamera.position);
     } else {
       stepMissionFrame(delta);
+      missionSky.group.position.copy(missionCamera.position);
     }
     renderer.render(active.scene, active.camera);
   });

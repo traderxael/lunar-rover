@@ -7,6 +7,7 @@ import * as THREE from "three";
  */
 export type Sky = {
   group: THREE.Group;
+  earth: THREE.Mesh;
   dispose: () => void;
 };
 
@@ -52,7 +53,7 @@ export function createSky(): Sky {
   stars.name = "stars";
   group.add(stars);
 
-  const earthGeometry = new THREE.SphereGeometry(4.2, 40, 28);
+  const earthGeometry = new THREE.SphereGeometry(6.4, 44, 30);
   const earthMaterial = new THREE.MeshStandardMaterial({
     color: new THREE.Color("#3E6FA8"),
     emissive: new THREE.Color("#16375F"),
@@ -66,7 +67,7 @@ export function createSky(): Sky {
   earth.name = "earth";
   group.add(earth);
 
-  const haloGeometry = new THREE.SphereGeometry(4.9, 32, 22);
+  const haloGeometry = new THREE.SphereGeometry(7.3, 34, 24);
   const haloMaterial = new THREE.MeshBasicMaterial({
     color: new THREE.Color("#6FA6D8"),
     transparent: true,
@@ -80,6 +81,7 @@ export function createSky(): Sky {
 
   return {
     group,
+    earth,
     dispose: () => {
       starGeometry.dispose();
       starMaterial.dispose();
